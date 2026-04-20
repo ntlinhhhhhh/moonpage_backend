@@ -12,6 +12,9 @@ public interface IMomentRepository
     Task<IEnumerable<Moment>> GetMomentsByUserIdAsync(string userId);
 
     Task CreateAsync(Moment moment);
+    
+    Task UpdateAsync(Moment moment);
+
     Task DeleteAsync(string momentId);
 
     // update information of user

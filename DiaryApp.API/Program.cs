@@ -11,7 +11,6 @@ using DiaryApp.Application.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using DiaryApp.Infrastructure.Configurations;
-using DiaryApp.Api.Extensions;
 using DiaryApp.Infrastructure.Providers;
 using Google.Cloud.Firestore;
 using DiaryApp.Infrastructure.Messaging;
@@ -25,16 +24,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
 {
-    var existingHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
-    
-    if (string.IsNullOrEmpty(existingHost)) 
+    var emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
+    if (!string.IsNullOrEmpty(emulatorHost))
     {
-        Console.WriteLine("Using Firestore Emulator in Standalone mode (localhost:3000)");
-        Environment.SetEnvironmentVariable("FIRESTORE_EMULATOR_HOST", "localhost:3000");
+        Console.WriteLine($"[Mode] run with Firestore Emulator: {emulatorHost}");
     }
-    else 
+    else
     {
-        Console.WriteLine($"Using Firestore Emulator from external environment: {existingHost}");
+        Console.WriteLine("[Mode] Run with Firebase/Firestore Production (Cloud)");
     }
 }
 
@@ -43,14 +40,14 @@ builder.Logging.AddConsole();
 
 // configuration
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-builder.Services.Configure<GoogleSettings>(builder.Configuration.GetSection("GoogleSettings"));
+builder.Services.Configure<GoogleCloudSettings>(builder.Configuration.GetSection("GoogleCloud"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
 builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
 var redisConnectionString = builder.Configuration["Redis:ConnectionString"];
+var projectId = builder.Configuration["Firebase:ProjectId"] ?? "moodyfy-3f2dd";
 
 // authentication & authorization
 builder.Services.AddAuthentication(options =>
@@ -79,31 +76,27 @@ builder.Services.AddAuthorization(options =>
 });
 
 string firebaseBase64 = Environment.GetEnvironmentVariable("FIREBASE_KEY_BASE64");
-string projectId = builder.Configuration["Firebase:ProjectId"] ?? "diaryapp-36c8f";
+string googleCredentialsPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
 
 if (!string.IsNullOrEmpty(firebaseBase64))
 {
     byte[] decodedBytes = Convert.FromBase64String(firebaseBase64);
-    string decodedJson = System.Text.Encoding.UTF8.GetString(decodedBytes);
-
+    string decodedJson = Encoding.UTF8.GetString(decodedBytes);
     FirebaseAdmin.FirebaseApp.Create(new FirebaseAdmin.AppOptions()
     {
         Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromJson(decodedJson)
     });
 }
-else
+else if (!string.IsNullOrEmpty(googleCredentialsPath) && File.Exists(googleCredentialsPath))
 {
-    string serviceAccountPath = builder.Configuration["Firebase:ServiceAccountPath"];
-    if (!string.IsNullOrEmpty(serviceAccountPath))
+    FirebaseAdmin.FirebaseApp.Create(new FirebaseAdmin.AppOptions()
     {
-        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", serviceAccountPath);
-        FirebaseAdmin.FirebaseApp.Create(new FirebaseAdmin.AppOptions()
-        {
-            Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(serviceAccountPath)
-        });
-    }
+        Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(googleCredentialsPath)
+    });
+    Console.WriteLine($"[Firebase] Đã nạp Service Account từ: {googleCredentialsPath}");
 }
 
+// --- 5. FIRESTORE DB REGISTRATION ---
 builder.Services.AddSingleton<FirestoreDb>(provider =>
 {
     var firestoreBuilder = new FirestoreDbBuilder
@@ -112,13 +105,11 @@ builder.Services.AddSingleton<FirestoreDb>(provider =>
         EmulatorDetection = EmulatorDetection.EmulatorOrProduction
     };
 
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST")))
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST")) 
+        && !string.IsNullOrEmpty(firebaseBase64))
     {
-        if (!string.IsNullOrEmpty(firebaseBase64))
-        {
-            byte[] decodedBytes = Convert.FromBase64String(firebaseBase64);
-            firestoreBuilder.JsonCredentials = System.Text.Encoding.UTF8.GetString(decodedBytes);
-        }
+        byte[] decodedBytes = Convert.FromBase64String(firebaseBase64);
+        firestoreBuilder.JsonCredentials = Encoding.UTF8.GetString(decodedBytes);
     }
 
     return firestoreBuilder.Build();
@@ -160,14 +151,12 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
 builder.Services.AddScoped<IFirebaseNotificationService, FirebaseNotificationService>();
 builder.Services.AddScoped<IAppNotificationService, AppNotificationService>();
-builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+builder.Services.AddHttpClient<IGoogleStorageService, GoogleStorageService>();
 
 // controllers & swagger
 builder.Services.AddControllers()
-    .ConfigureApiBehaviorOptions(options =>
-        {
-            options.SuppressMapClientErrors = false; 
-        });
+    .ConfigureApiBehaviorOptions(options => { options.SuppressMapClientErrors = false; });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -179,16 +168,13 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-
     c.AddSecurityRequirement(new OpenApiSecurityRequirement()
     {
         {
             new OpenApiSecurityScheme
             {
                 Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
-                Scheme = "oauth2",
-                Name = "Bearer",
-                In = ParameterLocation.Header,
+                Scheme = "oauth2", Name = "Bearer", In = ParameterLocation.Header,
             },
             new List<string>()
         }
@@ -196,16 +182,17 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-app.UseDeveloperExceptionPage();
 
 app.UseResponseCompression();
-
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseAuthentication(); 
 app.UseAuthorization();
-
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
@@ -213,17 +200,15 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = scope.ServiceProvider.GetRequiredService<FirestoreDb>();
-        Console.WriteLine("nitializing gRPC connection to Firestore (Warm-up)...");
-        
+        Console.WriteLine("[Firestore] Initializing connection to Firestore");
         await db.Collection("Users").Limit(1).GetSnapshotAsync(); 
-        
-        Console.WriteLine("Firestore is ready! API will respond at lightning speed.");
+        Console.WriteLine("[Firestore] Database is ready");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Firestore warm-up warning: {ex.Message}");
+        Console.WriteLine($"[Firestore] warm-up warning:: {ex.Message}");
     }
 }
 
-app.MapGet("/", () => Results.Ok("I am alive!"));
+app.MapGet("/", () => Results.Ok("DiaryApp API is Online!"));
 app.Run();

@@ -24,6 +24,20 @@ public class MomentRepository : IMomentRepository
         await docRef.SetAsync(momentData);
     }
 
+   async Task IMomentRepository.UpdateAsync(Moment moment)
+    {
+        if (string.IsNullOrEmpty(moment.Id))
+        {
+            throw new ArgumentException("Moment ID cannot be empty when updating.");
+        }
+
+        DocumentReference docRef = _momentCollection.Document(moment.Id);
+
+        var momentData = MapMomentToDictionary(moment);
+
+        await docRef.SetAsync(momentData, SetOptions.MergeAll);
+    }
+
     async Task IMomentRepository.DeleteAsync(string momentId)
     {
         await _momentCollection.Document(momentId).DeleteAsync();

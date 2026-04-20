@@ -2,7 +2,7 @@ namespace DiaryApp.Application.DTOs.DailyLog;
 
 public class DailyLogRequestDto
 {
-    public int BaseMoodId { get; set; }
+    public int? BaseMoodId { get; set; }
     public string Date { get; set; } = null!;
     public string? Note { get; set; }
     public double SleepHours { get; set; }

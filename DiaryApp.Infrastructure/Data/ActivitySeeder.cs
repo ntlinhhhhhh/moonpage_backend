@@ -5,13 +5,12 @@ using DiaryApp.Application.Interfaces.Services;
 namespace DiaryApp.Infrastructure.Data;
 
 public class ActivitySeeder(
-    ICloudinaryService cloudinaryService, 
+    IGoogleStorageService googleStorageService, 
     IActivityService activityService)
 {
-    private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
+    private readonly IGoogleStorageService _googleStorageService = googleStorageService;
     private readonly IActivityService _activityService = activityService;
 
-    // Lớp model phụ trợ để map dữ liệu dễ dàng hơn
     private class ActivitySeedModel
     {
         public string Name { get; set; } = string.Empty;
@@ -21,9 +20,6 @@ public class ActivitySeeder(
 
     public async Task SeedActivitiesAsync()
     {
-        // 1. Cấu hình danh sách các icon cần thêm từ ổ D của bạn
-        // Lưu ý: Tôi đang giả định các file của bạn có đuôi là .png, 
-        // nếu là .svg hay .jpg thì bạn nhớ sửa lại phần đuôi nhé!
         var activitiesToSeed = new List<ActivitySeedModel>
         {
             new() { Name = "Ăn sáng", Category = "Meal", FilePath = @"D:\icon\meal\breakfast.png" },
@@ -49,7 +45,7 @@ public class ActivitySeeder(
                 // BƯỚC 1: Mở luồng đọc file và Upload lên Cloudinary
                 using var stream = File.OpenRead(item.FilePath);
                 
-                string? cloudinaryUrl = await _cloudinaryService.UploadImageAsync(
+                string? cloudinaryUrl = await _googleStorageService.UploadImageAsync(
                     stream, 
                     Path.GetFileName(item.FilePath), 
                     "activities"

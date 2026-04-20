@@ -23,11 +23,6 @@ public class DailyLogService(
     {
         await EnsureUserExistsAsync(userId);
 
-        if (request.BaseMoodId < 1 || request.BaseMoodId > 5)
-        {
-            throw new ArgumentException("Invalid mood ID. Please select a value between 1 and 5.");
-        }
-
         if (request.ActivityIds != null && request.ActivityIds.Any())
         {
             var exists = await _activityRepository.CheckAllActivitiesExistAsync(request.ActivityIds);

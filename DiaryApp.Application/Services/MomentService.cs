@@ -88,6 +88,45 @@ public class MomentService(
         await _cacheService.RemoveAsync($"moments_user:{userId}");
     }
 
+    public async Task<MomentResponseDto> CreateInitialMomentAsync(string userId, MomentRequestDto request)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new KeyNotFoundException("We couldn't find your account information.");
+
+        var newMoment = new Moment
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserId = userId,
+            UserName = user.Name ?? "username",
+            UserAvatarUrl = user.AvatarUrl ?? "",
+            DailyLogId = request.DailyLogId,
+            ImageUrl = "pending",
+            Caption = request.Caption,
+            IsPublic = request.IsPublic,
+            CapturedAt = request.CapturedAt.ToUniversalTime()
+        };
+
+        await _momentRepository.CreateAsync(newMoment);
+
+        await _cacheService.RemoveAsync($"moments_user:{userId}");
+
+        return MapToResponseDto(newMoment);
+    }
+
+    public async Task UpdateImageUrlAsync(string momentId, string imageUrl)
+    {
+        var moment = await _momentRepository.GetByIdAsync(momentId);
+        if (moment == null)
+            throw new KeyNotFoundException("Moment not found for update.");
+
+        moment.ImageUrl = imageUrl;
+
+        await _momentRepository.UpdateAsync(moment);
+
+        await _cacheService.RemoveAsync($"moment:{momentId}");
+        await _cacheService.RemoveAsync($"moments_user:{moment.UserId}");
+    }
     private static MomentResponseDto MapToResponseDto(Moment moment)
     {
         return new MomentResponseDto

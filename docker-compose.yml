@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   diary-api:
     build:
@@ -7,13 +5,13 @@ services:
       dockerfile: Dockerfile 
     ports:
       - "8000:8080"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - Redis__ConnectionString=redis:6379 
-      - RabbitMQSettings__Url=amqp://guest:guest@rabbitmq:5672
-      - FIRESTORE_EMULATOR_HOST=host.docker.internal:3000 
+      - Redis__ConnectionString=diary-redis:6379 
+      - RabbitMQSettings__Url=amqp://guest:guest@diary-rabbitmq:5672
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-key.json
+    volumes:
+      - ./DiaryApp.API/firebase-key.json:/app/firebase-key.json:ro
     depends_on:
       - redis
       - rabbitmq
@@ -26,7 +24,6 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -36,7 +33,6 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq/
-    restart: unless-stopped
 
 volumes:
   redis_data:

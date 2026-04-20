@@ -6,9 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace DiaryApp.Infrastructure.Providers;
 
-public class GoogleAuthProvider(IOptions<GoogleSettings> googleSettings) : IGoogleAuthProvider
+public class GoogleAuthProvider(IOptions<GoogleCloudSettings> googleSettings) : IGoogleAuthProvider
 {
-    private readonly GoogleSettings _googleSettings = googleSettings.Value;
+    private readonly GoogleCloudSettings _googleSettings = googleSettings.Value;
 
     public async Task<GooglePayloadDto> ValidateTokenAsync(string idToken)
     {
@@ -30,11 +30,11 @@ public class GoogleAuthProvider(IOptions<GoogleSettings> googleSettings) : IGoog
         }
         catch (InvalidJwtException)
         {
-            throw new UnauthorizedAccessException("Lỗi xác thực Google: Token không hợp lệ.");
+            throw new UnauthorizedAccessException("Google authentication failed: Invalid token.");
         }
         catch (Exception ex)
         {
-            throw new Exception("Đã xảy ra lỗi khi xác thực Google: " + ex.Message);
+            throw new Exception("An error occurred during Google authentication: " + ex.Message);
         }
     }
 }

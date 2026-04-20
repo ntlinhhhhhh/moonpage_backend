@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using DiaryApp.Application.DTOs.DailyLog;
 using DiaryApp.Application.DTOs.Moment;
 using DiaryApp.Application.Interfaces;
 using DiaryApp.Application.Interfaces.Services;
@@ -13,57 +14,68 @@ namespace DiaryApp.API.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/moments")]
-public class MomentController(
-    IMomentService momentService,
-    IMessageProducer messageProducer
-) : ControllerBase
+public class MomentController : ControllerBase
 {
-    private readonly IMomentService _momentService = momentService;
-    private readonly IMessageProducer _messageProducer = messageProducer;
+    private readonly IMomentService _momentService;
+    private readonly IDailyLogService _dailyLogService;
+    private readonly IMessageProducer _messageProducer;
+    private readonly ILogger<MomentController> _logger;
+
+    public MomentController(
+        IMomentService momentService,
+        IDailyLogService dailyLogService,
+        IMessageProducer messageProducer,
+        ILogger<MomentController> logger)
+    {
+        _momentService = momentService;
+        _dailyLogService = dailyLogService;
+        _messageProducer = messageProducer;
+        _logger = logger;
+    }
 
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-    // POST: api/moments
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> CreateMoment([FromForm] MomentRequestDto request)
     {
         if (request.ImageFile == null || request.ImageFile.Length == 0)
-        {
-            return BadRequest(new { message = "Please attach a photo to share your moment!"});
-        } 
+            return BadRequest(new { message = "Vui lòng đính kèm ảnh!" });
+
         try
         {
-            var tempFilePath = Path.GetTempFileName();
+            var userId = CurrentUserId;
+            var dateStr = request.CapturedAt.ToString("yyyy-MM-dd");
+
+            var initialMoment = await _momentService.CreateInitialMomentAsync(userId, request);
+
+            var tempFolder = Path.Combine(Directory.GetCurrentDirectory(), "temp_images");
+            if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.ImageFile.FileName)}";
+            var tempFilePath = Path.Combine(tempFolder, fileName);
+
             using (var stream = new FileStream(tempFilePath, FileMode.Create))
             {
                 await request.ImageFile.CopyToAsync(stream);
             }
 
-            var payload = new
+            var payload = new 
             {
-                UserId = CurrentUserId,
-                DailyLogId = request.DailyLogId,
-                Caption = request.Caption,
-                IsPublic = request.IsPublic,
-                CapturedAt = request.CapturedAt,
-                TempImagePath = tempFilePath
+                MomentId = initialMoment.Id,
+                UserId = userId,
+                DateStr = dateStr,
+                TempPath = tempFilePath,
+                FileName = fileName
             };
 
             await _messageProducer.SendMessageAsync(payload, "image_upload_queue");
 
-            return Accepted(new { 
-                success = true, 
-                message = "Your moment is uploading in the background. It'll be ready soon!" 
-            });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
+            return Accepted(new { momentId = initialMoment.Id, message = "Đang xử lý ảnh..." });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = $"Server error: {ex.Message}" });
+            return StatusCode(500, new { message = "Server error" });
         }
     }
 

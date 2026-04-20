@@ -7,7 +7,7 @@ public class DailyLog
 {
     public required string Id { get; set; } 
     
-    public int BaseMoodId { get; set; }
+    public int? BaseMoodId { get; set; }
     public double SleepHours { get; set; } = 0;
     public bool IsMenstruation { get; set; } = false;
     public string? MenstruationPhase { get; set; } // detail of menstruation
