@@ -1,0 +1,6 @@
+DiaryApp.API_HostAddress = http://localhost:8080
+
+GET {{DiaryApp.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
