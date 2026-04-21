@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "activities",
+      "collectionGroup": "Activities",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "Category", "order": "ASCENDING" },
@@ -9,7 +9,7 @@
       ]
     },
     {
-      "collectionGroup": "dailylogs",
+      "collectionGroup": "DailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -18,7 +18,7 @@
       ]
     },
     {
-      "collectionGroup": "dailyLogs",
+      "collectionGroup": "DailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -26,16 +26,7 @@
       ]
     },
     {
-      "collectionGroup": "dailyLogs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "UserId", "order": "ASCENDING" },
-        { "fieldPath": "YearMonth", "order": "ASCENDING" },
-        { "fieldPath": "Date", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "dailyLogs",
+      "collectionGroup": "DailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -43,16 +34,16 @@
       ]
     },
     {
-      "collectionGroup": "dailyLogs",
+      "collectionGroup": "DailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
-        { "fieldPath": "YearMonth", "order": "ASCENDING" },
-        { "fieldPath": "ActivityIds", "arrayConfig": "CONTAINS" }
+        { "fieldPath": "ActivityIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "YearMonth", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "dailyLogs",
+      "collectionGroup": "DailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -60,29 +51,46 @@
       ]
     },
     {
-      "collectionGroup": "Notifications",
+      "collectionGroup": "Moments",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "UserId", "order": "ASCENDING" },
+        { "fieldPath": "DailyLogId", "order": "ASCENDING" },
+        { "fieldPath": "CapturedAt", "order": "ASCENDING" }
       ]
     },
     {
-    "collectionGroup": "Users",
-    "queryScope": "COLLECTION",
-    "fields": [
-        { "fieldPath": "Role", "order": "ASCENDING" },
-        { "fieldPath": "CreatedAt", "order": "DESCENDING" }
-    ]
+      "collectionGroup": "Moments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "UserId", "order": "ASCENDING" },
+        { "fieldPath": "CapturedAt", "order": "DESCENDING" }
+      ]
     },
     {
-    "collectionGroup": "Users",
-    "queryScope": "COLLECTION",
-    "fields": [
-        { "fieldPath": "DisplayName", "order": "ASCENDING" },
+      "collectionGroup": "AppNotifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "UserId", "order": "ASCENDING" },
         { "fieldPath": "CreatedAt", "order": "DESCENDING" }
-    ]
-}
+      ]
+    },
+    {
+      "collectionGroup": "Users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Role", "order": "ASCENDING" },
+        { "fieldPath": "CreatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "NameLower", "order": "ASCENDING" },
+        { "fieldPath": "CreatedAt", "order": "DESCENDING" }
+      ]
+    }
   ],
   "fieldOverrides": []
 }
