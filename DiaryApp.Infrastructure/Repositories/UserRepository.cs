@@ -214,19 +214,22 @@ public class UserRepository : IUserRepository
             OtpExpiry = snapshot.ContainsField("OtpExpiry") ? snapshot.GetValue<DateTime>("OtpExpiry") : (DateTime?)null
         };
 
-        user.Role = UserRole.User;
-        if (snapshot.ContainsField("Role"))
+        if (snapshot.ContainsField("Role") && snapshot.GetValue<object>("Role") != null)
         {
-            var roleData = snapshot.GetValue<object>("Role");
-            if (roleData is string roleStr)
+            var roleValue = snapshot.GetValue<object>("Role").ToString();
+            
+            if (Enum.TryParse<UserRole>(roleValue, true, out var roleEnum))
             {
-                if (Enum.TryParse<UserRole>(roleStr, true, out var roleEnum))
-                    user.Role = roleEnum;
+                user.Role = roleEnum;
             }
-            else if (roleData is long roleLong)
+            else
             {
-                user.Role = (UserRole)roleLong;
+                user.Role = UserRole.User;
             }
+        }
+        else
+        {
+            user.Role = UserRole.User;
         }
 
         return user;

@@ -12,4 +12,5 @@ public interface IAuthService
     Task ForgotPasswordAsync(ForgotPasswordRequestDto request);
     Task<VerifyOtpResponseDto> VerifyOtpAndGenerateTokenAsync(VerifyOtpRequestDto request);
     Task ResetPasswordAsync(ResetPasswordRequestDto request);
+    Task LogoutAsync(string token, DateTime expiryTime);
 }

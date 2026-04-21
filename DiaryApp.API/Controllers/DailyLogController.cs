@@ -17,7 +17,8 @@ public class DailyLogController(IDailyLogService logService) : ControllerBase
 
     // POST: api/dailylogs
     [HttpPost]
-    public async Task<IActionResult> UpsertDailyLog([FromBody] DailyLogRequestDto request)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpsertDailyLog([FromForm] DailyLogRequestDto request) // Đổi FromBody thành FromForm
     {
         try
         {

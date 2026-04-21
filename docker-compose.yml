@@ -6,10 +6,38 @@ services:
     ports:
       - "8000:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - Redis__ConnectionString=diary-redis:6379 
+      - ASPNETCORE_ENVIRONMENT=Production
+      
+      # google cloud & firebase
+      - GoogleCloud__ProjectId=moodyfy-3f2dd
+      - GoogleCloud__ClientId=511455154390-m8jmplb158akjj874288pipkt3emset0.apps.googleusercontent.com
+      - GoogleCloud__StorageBucket=moodyfy-3f2dd.firebasestorage.app
+
+      - GoogleCloud__ServiceAccountPath=/app/firebase-key.json
+      - Firebase__ProjectId=moodyfy-3f2dd
+      
+      # jwt settings
+      - JwtSettings__Secret=NNTExNDU1MTU0MzkwLW04am1wbGIxNThha2pqODc0Mjg4cGlwa3QzZW1zZXQwLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t
+      - JwtSettings__Issuer=DiaryApp
+      - JwtSettings__Audience=DiaryApp
+      - JwtSettings__ExpiryMinutes=43200
+      
+      # email settings
+      - EmailSettings__Email=diaryapp23@gmail.com
+      - EmailSettings__Password=uyozvhaobagwzocc
+      - EmailSettings__Host=smtp.gmail.com
+      - EmailSettings__Port=587
+      
+      # redis & rabbitmq
+      - Redis__ConnectionString=diary-redis:6379
       - RabbitMQSettings__Url=amqp://guest:guest@diary-rabbitmq:5672
+      
+      # google
       - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-key.json
+
+      - GoogleOAuth__ClientId=511455154390-m8jmplb158akjj874288pipkt3emset0.apps.googleusercontent.com
+      - GoogleOAuth__ClientSecret=GOlDZmh
+      
     volumes:
       - ./DiaryApp.API/firebase-key.json:/app/firebase-key.json:ro
     depends_on:
@@ -37,3 +65,5 @@ services:
 volumes:
   redis_data:
   rabbitmq_data:
+
+

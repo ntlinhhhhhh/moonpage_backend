@@ -11,5 +11,6 @@ public interface IDailyLogRepository
     Task<IEnumerable<DailyLog>> GetLogsByActivityAsync(string userId, string activityId, string yearMonth);
     Task<IEnumerable<DailyLog>> GetLogsByMenstruationAsync(string userId, bool isMenstruation); // isMenstruation = true
     Task<IEnumerable<DailyLog>> SearchByNoteAsync(string userId, string keyword); // search by keyword of note
+    Task AddPhotoUrlAsync(string userId, string date, string photoUrl);
     Task DeleteAsync(string userId, string dateId);
 }

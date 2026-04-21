@@ -1,6 +1,7 @@
 using DiaryApp.Application.DTOs;
 using DiaryApp.Application.DTOs.Auth;
 using DiaryApp.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Org.BouncyCastle.Ocsp;
 
@@ -128,6 +129,26 @@ public class AuthController(IAuthService authService) : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        try
+        {
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var expiryDate = jwtToken.ValidTo;
+
+            await _authService.LogoutAsync(token, expiryDate);
+            return Ok(new { message = "Logged out successfully!" });
         }
         catch (Exception ex)
         {

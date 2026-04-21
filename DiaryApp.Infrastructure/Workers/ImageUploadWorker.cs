@@ -36,26 +36,35 @@ public class ImageUploadWorker : BackgroundService
         {
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
-            var data = JsonSerializer.Deserialize<ImagePayload>(message);
+            var data = JsonSerializer.Deserialize<ImageUploadPayload>(message);
 
-            if (data != null && File.Exists(data.TempPath))
+            if (data != null && File.Exists(data.TempImagePath))
             {
                 using var scope = _serviceProvider.CreateScope();
                 var storageService = scope.ServiceProvider.GetRequiredService<IGoogleStorageService>();
-                var momentService = scope.ServiceProvider.GetRequiredService<IMomentService>();
-
+                
                 try
                 {
-                    using var stream = File.OpenRead(data.TempPath);
-                    var imageUrl = await storageService.UploadImageAsync(stream, data.FileName, "moments");
+                    using var stream = File.OpenRead(data.TempImagePath);
+                    var folder = data.UploadType == ImageUploadType.DailyLog ? "dailylogs" : "moments";
+                    var fileName = Path.GetFileName(data.TempImagePath);
+                    var imageUrl = await storageService.UploadImageAsync(stream, fileName, folder);
 
                     if (!string.IsNullOrEmpty(imageUrl))
                     {
-                        await momentService.UpdateImageUrlAsync(data.MomentId, imageUrl);
-                        _logger.LogInformation("Created moment successfully for id: {Id}", data.MomentId);
+                        if (data.UploadType == ImageUploadType.Moment)
+                        {
+                            var momentService = scope.ServiceProvider.GetRequiredService<IMomentService>();
+                            await momentService.UpdateImageUrlAsync(data.EntityId, imageUrl);
+                        }
+                        else if (data.UploadType == ImageUploadType.DailyLog)
+                        {
+                            var logService = scope.ServiceProvider.GetRequiredService<IDailyLogService>();
+                            await logService.AddPhotoToLogAsync(data.UserId, data.EntityId, imageUrl); // Cần định nghĩa hàm này
+                        }
                     }
 
-                    File.Delete(data.TempPath);
+                    File.Delete(data.TempImagePath);
                     await channel.BasicAckAsync(ea.DeliveryTag, false);
                 }
                 catch (Exception ex)

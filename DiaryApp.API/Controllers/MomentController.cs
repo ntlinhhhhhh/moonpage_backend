@@ -14,68 +14,37 @@ namespace DiaryApp.API.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/moments")]
-public class MomentController : ControllerBase
+public class MomentController(
+    IMomentService momentService,
+    IDailyLogService dailyLogService,
+    IMessageProducer messageProducer,
+    ILogger<MomentController> logger
+) : ControllerBase
 {
-    private readonly IMomentService _momentService;
-    private readonly IDailyLogService _dailyLogService;
-    private readonly IMessageProducer _messageProducer;
-    private readonly ILogger<MomentController> _logger;
-
-    public MomentController(
-        IMomentService momentService,
-        IDailyLogService dailyLogService,
-        IMessageProducer messageProducer,
-        ILogger<MomentController> logger)
-    {
-        _momentService = momentService;
-        _dailyLogService = dailyLogService;
-        _messageProducer = messageProducer;
-        _logger = logger;
-    }
+    private readonly IMomentService _momentService = momentService;
+    private readonly IDailyLogService _dailyLogService = dailyLogService;
+    private readonly IMessageProducer _messageProducer = messageProducer;
+    private readonly ILogger<MomentController> _logger = logger;
 
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
+    // POST: api/moments
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> CreateMoment([FromForm] MomentRequestDto request)
     {
         if (request.ImageFile == null || request.ImageFile.Length == 0)
-            return BadRequest(new { message = "Vui lòng đính kèm ảnh!" });
+            return BadRequest(new { message = "Please attach the photo!" });
 
         try
         {
-            var userId = CurrentUserId;
-            var dateStr = request.CapturedAt.ToString("yyyy-MM-dd");
-
-            var initialMoment = await _momentService.CreateInitialMomentAsync(userId, request);
-
-            var tempFolder = Path.Combine(Directory.GetCurrentDirectory(), "temp_images");
-            if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
-
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.ImageFile.FileName)}";
-            var tempFilePath = Path.Combine(tempFolder, fileName);
-
-            using (var stream = new FileStream(tempFilePath, FileMode.Create))
-            {
-                await request.ImageFile.CopyToAsync(stream);
-            }
-
-            var payload = new 
-            {
-                MomentId = initialMoment.Id,
-                UserId = userId,
-                DateStr = dateStr,
-                TempPath = tempFilePath,
-                FileName = fileName
-            };
-
-            await _messageProducer.SendMessageAsync(payload, "image_upload_queue");
-
-            return Accepted(new { momentId = initialMoment.Id, message = "Đang xử lý ảnh..." });
+            var response = await _momentService.CreateMomentAsync(CurrentUserId, request);
+            
+            return Accepted(response);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Server error" });
+            return StatusCode(500, new { message = "An error occurred while creating moment", ex });
         }
     }
 

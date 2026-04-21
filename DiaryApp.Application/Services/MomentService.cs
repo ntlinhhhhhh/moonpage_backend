@@ -8,39 +8,56 @@ namespace DiaryApp.Application.Services;
 public class MomentService(
     IMomentRepository momentRepository,
     IUserRepository userRepository,
-    IRedisCacheService cacheService
+    IRedisCacheService cacheService,
+    IMessageProducer messageProducer
     ) : IMomentService
 {
     private readonly IMomentRepository _momentRepository = momentRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
-
+    private readonly IMessageProducer _messageProducer = messageProducer;
     private readonly TimeSpan _cacheTtl = TimeSpan.FromHours(1);
 
-    public async Task<MomentResponseDto> CreateMomentAsync(string userId, MomentRequestDto request, string imageUrl)
+    public async Task<MomentResponseDto> CreateMomentAsync(string userId, MomentRequestDto request)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-            throw new KeyNotFoundException("We couldn't find your account information.");
+        var initialMoment = await CreateInitialMomentAsync(userId, request);
 
-        var newMoment = new Moment
+
+        if (request.ImageFile != null && request.ImageFile.Length > 0)
         {
-            Id = Guid.NewGuid().ToString(),
-            UserId = userId,
-            UserName = user.Name ?? "username",
-            UserAvatarUrl = user.AvatarUrl ?? "",
-            DailyLogId = request.DailyLogId,
-            ImageUrl = imageUrl,
-            Caption = request.Caption,
-            IsPublic = request.IsPublic,
-            CapturedAt = request.CapturedAt.ToUniversalTime()
+            var tempFolder = Path.Combine(Directory.GetCurrentDirectory(), "temp_images");
+            if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.ImageFile.FileName)}";
+            var tempFilePath = Path.Combine(tempFolder, fileName);
+
+            using (var stream = new FileStream(tempFilePath, FileMode.Create))
+            {
+                await request.ImageFile.CopyToAsync(stream);
+            }
+
+            var payload = new ImageUploadPayload
+            {
+                UserId = userId,
+                EntityId = initialMoment.Id,
+                UploadType = ImageUploadType.Moment,
+                TempImagePath = tempFilePath
+            };
+
+            await _messageProducer.SendMessageAsync(payload, "image_upload_queue");
+        }
+        return new MomentResponseDto
+        {
+            Id = initialMoment.Id,
+            UserId = initialMoment.UserId,
+            UserName = initialMoment.UserName, // Lấy từ entity
+            UserAvatarUrl = initialMoment.UserAvatarUrl, // Lấy từ entity
+            DailyLogId = initialMoment.DailyLogId,
+            ImageUrl = string.Empty, // Đang xử lý async
+            Caption = initialMoment.Caption,
+            IsPublic = initialMoment.IsPublic,
+            CapturedAt = initialMoment.CapturedAt
         };
-
-        await _momentRepository.CreateAsync(newMoment);
-
-        await _cacheService.RemoveAsync($"moments_user:{userId}");
-
-        return MapToResponseDto(newMoment);
     }
 
     public async Task<MomentResponseDto?> GetByIdAsync(string momentId)
@@ -100,7 +117,7 @@ public class MomentService(
             UserId = userId,
             UserName = user.Name ?? "username",
             UserAvatarUrl = user.AvatarUrl ?? "",
-            DailyLogId = request.DailyLogId,
+            DailyLogId = string.IsNullOrEmpty(request.DailyLogId) ? null : request.DailyLogId,
             ImageUrl = "pending",
             Caption = request.Caption,
             IsPublic = request.IsPublic,

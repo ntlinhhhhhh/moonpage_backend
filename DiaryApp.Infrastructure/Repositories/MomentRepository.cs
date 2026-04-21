@@ -1,3 +1,4 @@
+using System.Globalization;
 using DiaryApp.Application.Interfaces;
 using DiaryApp.Domain.Entities;
 using DiaryApp.Infrastructure.Data;
@@ -82,6 +83,48 @@ async Task IMomentRepository.SyncUserMediaInMomentsAsync(string userId, string n
                 {
                     { "UserName", newName },
                     { "UserAvatarUrl", newAvatarUrl }
+                };
+                batch.Update(document.Reference, updates);
+            }
+
+            await batch.CommitAsync();
+        }
+    }
+
+    async Task IMomentRepository.LinkMomentsToLogAsync(string userId, string dateStr, string logId)
+    {
+        if (!DateTime.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime targetDate))
+        {
+            throw new ArgumentException("Invalid date format. Expected format is yyyy-MM-dd.");
+        }
+        
+        DateTime startOfDay = targetDate;
+        DateTime endOfDay = targetDate.AddDays(1).AddTicks(-1);
+
+        Query query = _momentCollection
+            .WhereEqualTo("UserId", userId)
+            .WhereEqualTo("DailyLogId", null)
+            .WhereGreaterThanOrEqualTo("CapturedAt", startOfDay)
+            .WhereLessThanOrEqualTo("CapturedAt", endOfDay);
+
+        QuerySnapshot snapshot = await query.GetSnapshotAsync();
+
+        var documents = snapshot.Documents.ToList();
+        if (!documents.Any()) return;
+
+        const int batchSize = 400; 
+
+        for (int i = 0; i < documents.Count; i += batchSize)
+        {
+            var chunk = documents.Skip(i).Take(batchSize);
+            WriteBatch batch = _db.StartBatch();
+
+            foreach (DocumentSnapshot document in chunk)
+            {
+                var updates = new Dictionary<string, object>
+                {
+                    { "DailyLogId", logId },
+                    { "UpdatedAt", DateTime.UtcNow }
                 };
                 batch.Update(document.Reference, updates);
             }

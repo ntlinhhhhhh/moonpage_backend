@@ -17,6 +17,7 @@ using DiaryApp.Infrastructure.Messaging;
 using DiaryApp.Infrastructure.Workers;
 using Microsoft.AspNetCore.ResponseCompression;
 using Google.Api.Gax;
+using DiaryApp.API.Middlewares;
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -140,6 +141,7 @@ builder.Services.AddScoped<IAppNotificationRepository, AppNotificationRepository
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddScoped<IMessageProducer, RabbitMQProducer>();
 builder.Services.AddHostedService<ImageUploadWorker>();
+builder.Services.AddHostedService<DatabaseTaskWorker>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -190,7 +192,7 @@ if (app.Environment.IsDevelopment())
 }
 app.UseSwagger();
 app.UseSwaggerUI();
-
+app.UseMiddleware<TokenBlacklistMiddleware>();
 app.UseAuthentication(); 
 app.UseAuthorization();
 app.MapControllers();

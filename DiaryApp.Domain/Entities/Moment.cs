@@ -8,7 +8,7 @@ namespace DiaryApp.Domain.Entities;
     public required string UserId { get; set; }
     public required string UserName { get; set; } 
     public required string UserAvatarUrl { get; set; }
-    public required string DailyLogId { get; set; } // Date string "YYYY-MM-DD"
+    public required string? DailyLogId { get; set; } // Date string "YYYY-MM-DD"
     public required string ImageUrl { get; set; }
     public string? Caption { get; set; }
     public bool IsPublic { get; set; }

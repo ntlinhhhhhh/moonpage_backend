@@ -226,4 +226,13 @@ public class AuthService(
         await _cacheService.RemoveAsync(tokenCacheKey);
         await _cacheService.RemoveAsync($"auth:email:{email}");
     }
+
+    public async Task LogoutAsync(string token, DateTime expiryTime)
+    {
+        var timeRemaining = expiryTime - DateTime.UtcNow;
+        if (timeRemaining > TimeSpan.Zero)
+        {
+            await _cacheService.SetAsync($"blacklist:{token}", true, timeRemaining);
+        }
+    }
 }

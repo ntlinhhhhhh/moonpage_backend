@@ -100,7 +100,11 @@ public class DailyLogRepository : IDailyLogRepository
         QuerySnapshot snapshot = await query.GetSnapshotAsync();
         return snapshot.Documents.Select(MapSnapshotToLog);
     }
-
+    async Task IDailyLogRepository.AddPhotoUrlAsync(string userId, string date, string photoUrl)
+    {
+        DocumentReference logRef = _logCollection.Document(GetDocId(userId, date));
+        await logRef.UpdateAsync("DailyPhotos", FieldValue.ArrayUnion(photoUrl));
+    }
     private Dictionary<string, object> MapLogToDictionary(string userId, DailyLog log)
     {
         return new Dictionary<string, object>

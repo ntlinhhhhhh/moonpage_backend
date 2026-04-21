@@ -11,5 +11,6 @@ public interface IDailyLogService
     Task<IEnumerable<DailyLogResponseDto>> GetLogsByMoodAsync(string userId, int moodId);
     Task<IEnumerable<DailyLogResponseDto>> GetLogsByMenstruationAsync(string userId, bool isMenstruation);
     Task<IEnumerable<DailyLogResponseDto>> SearchByNoteAsync(string userId, string keyword);
+    Task AddPhotoToLogAsync(string userId, string date, string photoUrl);
     Task DeleteLogAsync(string userId, string date);
 }
