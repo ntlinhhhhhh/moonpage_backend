@@ -18,13 +18,18 @@ public class StatisticsService(
     {
         try
         {
-            // Lấy dữ liệu từ Repo dựa trên YearMonth hoặc Year
-            var logs = await statsRepo.GetLogsInRangeAsync(userId, year, month);
-            var streak = await streakRepo.GetByUserIdAsync(userId);
-            var allActivities = await activityRepo.GetAllAsync();
-            var totalPhotos = await statsRepo.GetTotalPhotosCountAsync(userId);
+            var logsTask = statsRepo.GetLogsInRangeAsync(userId, year, month);
+            var streakTask = streakRepo.GetByUserIdAsync(userId);
+            var activitiesTask = activityRepo.GetAllAsync();
+            var photosTask = statsRepo.GetTotalPhotosCountAsync(userId);
 
-            // 1. Phân tích Mood Distribution (Pie Chart)
+            await Task.WhenAll(logsTask, streakTask, activitiesTask, photosTask);
+
+            var logs = logsTask.Result;
+            var streak = streakTask.Result;
+            var allActivities = activitiesTask.Result;
+            var totalPhotos = photosTask.Result;
+
             var logsWithMood = logs.Where(l => l.BaseMoodId.HasValue).ToList();
             var moodDist = logsWithMood.GroupBy(l => l.BaseMoodId!.Value)
                 .Select(g => new MoodDistributionDto {
@@ -35,7 +40,6 @@ public class StatisticsService(
                         : 0
                 }).ToList();
 
-            // 2. Phân tích Happiness Score (Activity Influence)
             var influences = new List<ActivityInfluenceDto>();
             foreach (var act in allActivities)
             {
