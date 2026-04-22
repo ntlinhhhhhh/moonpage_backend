@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "Activities",
+      "collectionGroup": "activities",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "Category", "order": "ASCENDING" },
@@ -9,7 +9,7 @@
       ]
     },
     {
-      "collectionGroup": "DailyLogs",
+      "collectionGroup": "dailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -18,7 +18,7 @@
       ]
     },
     {
-      "collectionGroup": "DailyLogs",
+      "collectionGroup": "dailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -26,7 +26,7 @@
       ]
     },
     {
-      "collectionGroup": "DailyLogs",
+      "collectionGroup": "dailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -34,7 +34,7 @@
       ]
     },
     {
-      "collectionGroup": "DailyLogs",
+      "collectionGroup": "dailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -43,7 +43,7 @@
       ]
     },
     {
-      "collectionGroup": "DailyLogs",
+      "collectionGroup": "dailyLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -51,16 +51,16 @@
       ]
     },
     {
-      "collectionGroup": "Moments",
+      "collectionGroup": "moments",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "UserId", "order": "ASCENDING" },
         { "fieldPath": "DailyLogId", "order": "ASCENDING" },
+        { "fieldPath": "UserId", "order": "ASCENDING" },
         { "fieldPath": "CapturedAt", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "Moments",
+      "collectionGroup": "moments",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -68,7 +68,15 @@
       ]
     },
     {
-      "collectionGroup": "AppNotifications",
+      "collectionGroup": "moments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "DailyLogId", "order": "ASCENDING" },
+        { "fieldPath": "CapturedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "appNotifications", 
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
@@ -76,7 +84,7 @@
       ]
     },
     {
-      "collectionGroup": "Users",
+      "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "Role", "order": "ASCENDING" },
@@ -84,7 +92,7 @@
       ]
     },
     {
-      "collectionGroup": "Users",
+      "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "NameLower", "order": "ASCENDING" },

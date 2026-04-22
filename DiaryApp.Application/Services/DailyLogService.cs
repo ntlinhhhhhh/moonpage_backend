@@ -12,7 +12,8 @@ public class DailyLogService(
     IActivityRepository activityRepository,
     IMomentRepository momentRepository,
     IRedisCacheService cacheService,
-    IMessageProducer messageProducer
+    IMessageProducer messageProducer,
+    IGoogleStorageService googleStorageService
 ) : IDailyLogService
 {
     private readonly IDailyLogRepository _logRepository = logRepository;
@@ -21,6 +22,7 @@ public class DailyLogService(
     private readonly IMomentRepository _momentRepository = momentRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
     private readonly IMessageProducer _messageProducer = messageProducer;
+    private readonly IGoogleStorageService _googleStorageService = googleStorageService;
 
     private readonly TimeSpan _cacheTtl = TimeSpan.FromHours(12);
 
@@ -89,15 +91,24 @@ public class DailyLogService(
             }
         }
 
-        var dbPayload = new DatabaseTaskPayload
+        var linkMomentPayload = new DatabaseTaskPayload
         {
             TaskType = DbTaskType.LinkMomentsToLog,
             UserId = userId,
             DateStr = request.Date,
             EntityId = newLog.Id
         };
+        await _messageProducer.SendMessageAsync(linkMomentPayload, "db_tasks_queue");
 
-        await _messageProducer.SendMessageAsync(dbPayload, "db_tasks_queue");
+        var rewardPayload = new DatabaseTaskPayload
+        {
+            TaskType = DbTaskType.ProcessRewards,
+            UserId = userId,
+            DateStr = request.Date,
+            EntityId = newLog.Id
+        };
+        await _messageProducer.SendMessageAsync(rewardPayload, "db_tasks_queue");
+
     }
 
     public async Task<DailyLogResponseDto?> GetLogByDateAsync(string userId, string date)
@@ -180,7 +191,7 @@ public class DailyLogService(
         string extractedYearMonth = date.Length >= 7 ? date.Substring(0, 7) : DateTime.UtcNow.ToString("yyyy-MM");
         await ClearLogCachesAsync(userId, date, extractedYearMonth);
     }
-    private static DailyLogResponseDto MapToResponseDto(DailyLog log)
+    private DailyLogResponseDto MapToResponseDto(DailyLog log)
     {
         return new DailyLogResponseDto
         {
@@ -191,7 +202,7 @@ public class DailyLogService(
             SleepHours = log.SleepHours,
             IsMenstruation = log.IsMenstruation,
             MenstruationPhase = log.MenstruationPhase,
-            DailyPhotos = log.DailyPhotos ?? new List<string>(),
+            DailyPhotos = log.DailyPhotos.Select(_googleStorageService.GetImageUrl).ToList(),
             ActivityIds = log.ActivityIds ?? new List<string>(),
             CreatedAt = log.CreatedAt
         };

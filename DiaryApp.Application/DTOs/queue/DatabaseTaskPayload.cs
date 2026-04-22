@@ -3,6 +3,7 @@ namespace DiaryApp.Application.DTOs.Queue;
 public enum DbTaskType
 {
     LinkMomentsToLog,
+    ProcessRewards,
     // other: CalculateDailyStreak, CleanupOldData...
 }
 

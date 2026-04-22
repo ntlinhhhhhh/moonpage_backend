@@ -60,7 +60,7 @@ public class ImageUploadWorker : BackgroundService
                         else if (data.UploadType == ImageUploadType.DailyLog)
                         {
                             var logService = scope.ServiceProvider.GetRequiredService<IDailyLogService>();
-                            await logService.AddPhotoToLogAsync(data.UserId, data.EntityId, imageUrl); // Cần định nghĩa hàm này
+                            await logService.AddPhotoToLogAsync(data.UserId, data.EntityId, imageUrl);
                         }
                     }
 

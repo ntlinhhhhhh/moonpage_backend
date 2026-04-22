@@ -138,10 +138,13 @@ builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 builder.Services.AddScoped<IDailyLogRepository, DailyLogRepository>();
 builder.Services.AddScoped<IMomentRepository, MomentRepository>();
 builder.Services.AddScoped<IAppNotificationRepository, AppNotificationRepository>();
+builder.Services.AddHttpClient<IGoogleStorageService, GoogleStorageService>();
+builder.Services.AddScoped<IUserStreakRepository, UserStreakRepository>();
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddScoped<IMessageProducer, RabbitMQProducer>();
 builder.Services.AddHostedService<ImageUploadWorker>();
 builder.Services.AddHostedService<DatabaseTaskWorker>();
+builder.Services.AddHostedService<StreakCleanupWorker>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -153,7 +156,6 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
 builder.Services.AddScoped<IFirebaseNotificationService, FirebaseNotificationService>();
 builder.Services.AddScoped<IAppNotificationService, AppNotificationService>();
-builder.Services.AddHttpClient<IGoogleStorageService, GoogleStorageService>();
 
 // controllers & swagger
 builder.Services.AddControllers()

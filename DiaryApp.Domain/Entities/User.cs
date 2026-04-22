@@ -19,6 +19,8 @@ public class User
     public string AuthProvider { get; set; } = "Local";
     public string? ResetOtp { get; set; }
     public DateTime? OtpExpiry { get; set; }
+    // public int CurrentStreak { get; set; } = 0;
+    // public DateTime? LastRewardDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }

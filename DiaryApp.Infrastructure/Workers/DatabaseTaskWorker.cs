@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using DiaryApp.Application.DTOs.Queue;
 using DiaryApp.Application.Interfaces;
+using DiaryApp.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,7 +31,6 @@ public class DatabaseTaskWorker : BackgroundService
         using var connection = await factory.CreateConnectionAsync(stoppingToken);
         using var channel = await connection.CreateChannelAsync(null, stoppingToken);
 
-        // Khai báo hàng đợi riêng cho DB Tasks
         await channel.QueueDeclareAsync("db_tasks_queue", true, false, false);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
@@ -45,37 +45,91 @@ public class DatabaseTaskWorker : BackgroundService
 
                 if (data != null)
                 {
-                    // Tạo một Scope mới vì Repository thường là Scoped Service
                     using var scope = _serviceProvider.CreateScope();
 
-                    // Điều hướng xử lý dựa trên TaskType
                     switch (data.TaskType)
                     {
                         case DbTaskType.LinkMomentsToLog:
                             var momentRepo = scope.ServiceProvider.GetRequiredService<IMomentRepository>();
                             await momentRepo.LinkMomentsToLogAsync(data.UserId, data.DateStr, data.EntityId);
-                            _logger.LogInformation("Đã tự động liên kết các Moments vào DailyLog: {LogId} cho User: {UserId}", data.EntityId, data.UserId);
+                            _logger.LogInformation("Successfully linked Moments to DailyLog: {LogId} for User: {UserId}", data.EntityId, data.UserId);
                             break;
+
+                        case DbTaskType.ProcessRewards:
+                            var streakRepo = scope.ServiceProvider.GetRequiredService<IUserStreakRepository>();
+                            var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
                             
-                        // Thêm các case khác ở đây trong tương lai
+                            var streak = await streakRepo.GetByUserIdAsync(data.UserId) 
+                                        ?? new UserStreak { UserId = data.UserId };
+
+                            if (!DateTime.TryParse(data.DateStr, out DateTime logDate)) 
+                            {
+                                logDate = DateTime.UtcNow.Date;
+                            }
+                            
+                            var today = logDate.Date;
+                            var lastLog = streak.LastLogDate?.Date;
+
+                            if (lastLog == today) return; 
+
+                            int coinBonus = 10;
+
+                            if (lastLog == today.AddDays(-1)) 
+                            {
+                                streak.CurrentStreak++;
+                            } 
+                            else 
+                            {
+                                if (streak.StreakFreezes > 0 && lastLog == today.AddDays(-2)) 
+                                {
+                                    streak.StreakFreezes--;
+                                    streak.CurrentStreak += 1;
+                                    _logger.LogInformation("User {UserId} streak saved using a Streak Freeze!", data.UserId);
+                                } 
+                                else 
+                                {
+                                    streak.CurrentStreak = 1;
+                                    _logger.LogInformation("User {UserId} streak broken. Reset to 1.", data.UserId);
+                                }
+                            }
+
+                            if (streak.CurrentStreak > streak.LongestStreak)   
+                                streak.LongestStreak = streak.CurrentStreak;
+
+                            if (streak.CurrentStreak == 7) coinBonus += 25;
+                            else if (streak.CurrentStreak == 15) coinBonus += 50;
+                            
+                            if (streak.CurrentStreak > 0 && streak.CurrentStreak % 30 == 0)
+                            {
+                                coinBonus += 100;
+                                streak.StreakFreezes += 1;
+                                _logger.LogInformation("User {UserId} received 1 Streak Freeze for reaching {Streak} days streak!", data.UserId, streak.CurrentStreak);
+                            }
+
+                            streak.LastLogDate = today;
+
+                            await Task.WhenAll(
+                                streakRepo.UpsertAsync(streak),
+                                userRepo.UpdateCoinBalanceAsync(data.UserId, coinBonus)
+                            );
+                            
+                            _logger.LogInformation("Successfully processed rewards for User {UserId} at {DateStr}.", data.UserId, data.DateStr);
+                            break;
+                                                    
                     }
                 }
 
-                // Báo cáo cho RabbitMQ biết là đã xử lý xong tin nhắn thành công
                 await channel.BasicAckAsync(ea.DeliveryTag, false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xử lý Background Database Task!");
-                // Nếu lỗi do code hoặc DB, Nack để trả tin nhắn về Queue (tùy thuộc chiến lược retry của bạn)
-                // Tham số cuối là 'requeue: true' - tin nhắn sẽ được đẩy lại vào hàng đợi
+                _logger.LogError(ex, "Error while processing Background Database Task!");
                 await channel.BasicNackAsync(ea.DeliveryTag, false, true); 
             }
         };
 
         await channel.BasicConsumeAsync("db_tasks_queue", false, consumer);
         
-        // Giữ cho Worker luôn sống và lắng nghe
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 }

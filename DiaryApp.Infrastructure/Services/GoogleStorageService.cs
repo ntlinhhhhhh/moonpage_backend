@@ -22,17 +22,16 @@ public class GoogleStorageService : IGoogleStorageService
 
         var storageClient = await StorageClient.CreateAsync();
 
-        // url: diary_app/moments/image_name.jpg
-        string objectName = $"diary_app/{folderName}/{fileName}";
+        string objectKey = $"diary_app/{folderName}/{fileName}";
 
         await storageClient.UploadObjectAsync(
             bucket: _bucketName,
-            objectName: objectName,
+            objectName: objectKey,
             contentType: "image/jpeg",
             source: fileStream
         );
 
-        return $"https://storage.googleapis.com/{_bucketName}/{objectName}";
+        return objectKey;
     }
 
     public async Task<string?> UploadImageFromUrlAsync(string imageUrl, string folderName)
@@ -46,23 +45,48 @@ public class GoogleStorageService : IGoogleStorageService
         return await UploadImageAsync(stream, fileName, folderName);
     }
 
-    public async Task<bool> DeleteImageAsync(string fileUrl)
+    public string GetImageUrl(string objectKey)
+    {
+        if (string.IsNullOrEmpty(objectKey)) return string.Empty;
+
+        if (objectKey.StartsWith("http://") || objectKey.StartsWith("https://")) 
+        {
+            return objectKey;
+        }
+
+        return $"https://firebasestorage.googleapis.com/v0/b/{_bucketName}/o/{Uri.EscapeDataString(objectKey)}?alt=media";
+    }
+
+    public async Task<bool> DeleteImageAsync(string objectKeyOrUrl)
     {
         try
         {
-            if (string.IsNullOrEmpty(fileUrl)) return false;
+            if (string.IsNullOrEmpty(objectKeyOrUrl)) return false;
 
             var storageClient = await StorageClient.CreateAsync();
-            string prefix = $"https://storage.googleapis.com/{_bucketName}/";
+            string finalObjectKey = objectKeyOrUrl;
             
-            if (fileUrl.StartsWith(prefix))
+            if (objectKeyOrUrl.StartsWith("http"))
             {
-                string objectName = fileUrl.Replace(prefix, "");
-                await storageClient.DeleteObjectAsync(_bucketName, objectName);
-                return true;
+                string standardPrefix = $"https://storage.googleapis.com/{_bucketName}/";
+                
+                if (objectKeyOrUrl.StartsWith(standardPrefix))
+                {
+                    finalObjectKey = objectKeyOrUrl.Replace(standardPrefix, "");
+                }
+                else if (objectKeyOrUrl.Contains("/o/"))
+                {
+                    var splitPath = objectKeyOrUrl.Split("/o/")[1].Split("?")[0];
+                    finalObjectKey = Uri.UnescapeDataString(splitPath);
+                }
             }
-            return false;
+
+            await storageClient.DeleteObjectAsync(_bucketName, finalObjectKey);
+            return true;
         }
-        catch { return false; }
+        catch 
+        { 
+            return false; 
+        }
     }
 }

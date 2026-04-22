@@ -7,4 +7,6 @@ public interface IGoogleStorageService
     Task<string?> UploadImageFromUrlAsync(string imageUrl, string folderName);
     
     Task<bool> DeleteImageAsync(string fileUrl);
+    string GetImageUrl(string objectKey); 
+
 }

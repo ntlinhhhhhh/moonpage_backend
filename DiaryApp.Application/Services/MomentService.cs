@@ -9,13 +9,15 @@ public class MomentService(
     IMomentRepository momentRepository,
     IUserRepository userRepository,
     IRedisCacheService cacheService,
-    IMessageProducer messageProducer
+    IMessageProducer messageProducer,
+    IGoogleStorageService googleStorageService
     ) : IMomentService
 {
     private readonly IMomentRepository _momentRepository = momentRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
     private readonly IMessageProducer _messageProducer = messageProducer;
+    private readonly IGoogleStorageService _googleStorageService = googleStorageService;
     private readonly TimeSpan _cacheTtl = TimeSpan.FromHours(1);
 
     public async Task<MomentResponseDto> CreateMomentAsync(string userId, MomentRequestDto request)
@@ -50,10 +52,10 @@ public class MomentService(
         {
             Id = initialMoment.Id,
             UserId = initialMoment.UserId,
-            UserName = initialMoment.UserName, // Lấy từ entity
-            UserAvatarUrl = initialMoment.UserAvatarUrl, // Lấy từ entity
+            UserName = initialMoment.UserName, 
+            UserAvatarUrl = initialMoment.UserAvatarUrl, 
             DailyLogId = initialMoment.DailyLogId,
-            ImageUrl = string.Empty, // Đang xử lý async
+            ImageUrl = string.Empty, 
             Caption = initialMoment.Caption,
             IsPublic = initialMoment.IsPublic,
             CapturedAt = initialMoment.CapturedAt
@@ -144,7 +146,8 @@ public class MomentService(
         await _cacheService.RemoveAsync($"moment:{momentId}");
         await _cacheService.RemoveAsync($"moments_user:{moment.UserId}");
     }
-    private static MomentResponseDto MapToResponseDto(Moment moment)
+
+    private MomentResponseDto MapToResponseDto(Moment moment)
     {
         return new MomentResponseDto
         {
@@ -153,7 +156,7 @@ public class MomentService(
             UserName = moment.UserName,
             UserAvatarUrl = moment.UserAvatarUrl,
             DailyLogId = moment.DailyLogId,
-            ImageUrl = moment.ImageUrl,
+            ImageUrl = _googleStorageService.GetImageUrl(moment.ImageUrl),
             Caption = moment.Caption,
             IsPublic = moment.IsPublic,
             CapturedAt = moment.CapturedAt
