@@ -4,6 +4,7 @@ public enum DbTaskType
 {
     LinkMomentsToLog,
     ProcessRewards,
+    SyncUserMedia
     // other: CalculateDailyStreak, CleanupOldData...
 }
 
@@ -13,4 +14,6 @@ public class DatabaseTaskPayload
     public string UserId { get; set; } = string.Empty;
     public string DateStr { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
+    public string? UserName { get; set; }
+    public string? AvatarUrl { get; set; }
 }

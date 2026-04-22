@@ -59,7 +59,7 @@ public class DailyLogService(
             };
 
         await _logRepository.UpsertAsync(userId, newLog);
-        await ClearLogCachesAsync(userId, request.Date, extractedYearMonth);
+        await ClearLogCachesAsync(userId, request.Date);
 
         if (request.DailyPhotos != null && request.DailyPhotos.Any())
         {
@@ -180,7 +180,7 @@ public class DailyLogService(
         if (existingLog != null)
         {
             await _logRepository.DeleteAsync(userId, date);
-            await ClearLogCachesAsync(userId, date, existingLog.YearMonth);
+            await ClearLogCachesAsync(userId, date);
         }
     }
 
@@ -189,7 +189,7 @@ public class DailyLogService(
         await _logRepository.AddPhotoUrlAsync(userId, date, photoUrl);
         
         string extractedYearMonth = date.Length >= 7 ? date.Substring(0, 7) : DateTime.UtcNow.ToString("yyyy-MM");
-        await ClearLogCachesAsync(userId, date, extractedYearMonth);
+        await ClearLogCachesAsync(userId, date);
     }
     private DailyLogResponseDto MapToResponseDto(DailyLog log)
     {
@@ -217,9 +217,27 @@ public class DailyLogService(
         }
     }
 
-    private async Task ClearLogCachesAsync(string userId, string date, string yearMonth)
+    private async Task ClearLogCachesAsync(string userId, string date)
     {
-        await _cacheService.RemoveAsync($"log:{userId}:{date}");
-        await _cacheService.RemoveAsync($"logs_month:{userId}:{yearMonth}");
+        if (!DateTime.TryParse(date, out var parsedDate))
+        {
+            return;
+        }
+
+        int year = parsedDate.Year;
+        int month = parsedDate.Month;
+        string yearMonth = parsedDate.ToString("yyyy-MM");
+
+        var keysToRemove = new List<string>
+        {
+            $"log:{userId}:{date}",
+            $"logs_month:{userId}:{yearMonth}",
+            $"stats_summary:{userId}:{year}:{month}", // Cache thống kê tháng
+            $"stats_summary:{userId}:{year}:0"        // Cache thống kê năm
+        };
+
+        var removeTasks = keysToRemove.Select(key => _cacheService.RemoveAsync(key));
+        await Task.WhenAll(removeTasks);
+
     }
 }

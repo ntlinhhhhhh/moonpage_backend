@@ -1,5 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using DiaryApp.Application.DTOs.Statistic;
-using DiaryApp.Application.Interfaces;
+using DiaryApp.Application.Interfaces; 
 using DiaryApp.Application.Interfaces.Repositories;
 using DiaryApp.Application.Interfaces.Services;
 using DiaryApp.Domain.Enums;
@@ -11,17 +15,39 @@ public class StatisticsService(
     IStatisticsRepository statsRepo, 
     IUserStreakRepository streakRepo, 
     IActivityRepository activityRepo,
-    ILogger<StatisticsService> logger
+    ILogger<StatisticsService> logger,
+    IRedisCacheService cacheService
 ) : IStatisticsService
 {
+    private readonly IStatisticsRepository _statsRepo = statsRepo;
+    private readonly IUserStreakRepository _streakRepo = streakRepo;
+    private readonly IActivityRepository _activityRepo = activityRepo;
+    private readonly ILogger<StatisticsService> _logger = logger;
+    private readonly IRedisCacheService _cacheService = cacheService;
+    
+    private readonly string _cachePrefix = "stats_summary";
+    private readonly TimeSpan _cacheTtl = TimeSpan.FromMinutes(15);
+
     public async Task<UserStatsSummaryDto?> GetStatsSummaryAsync(string userId, int year, int? month)
     {
         try
         {
-            var logsTask = statsRepo.GetLogsInRangeAsync(userId, year, month);
-            var streakTask = streakRepo.GetByUserIdAsync(userId);
-            var activitiesTask = activityRepo.GetAllAsync();
-            var photosTask = statsRepo.GetTotalPhotosCountAsync(userId);
+            // 1. Tạo Cache Key duy nhất
+            string cacheKey = $"{_cachePrefix}:{userId}:{year}:{month ?? 0}";
+
+            // 2. Kiểm tra Redis Cache
+            var cachedStats = await _cacheService.GetAsync<UserStatsSummaryDto>(cacheKey);
+            if (cachedStats != null)
+            {
+                _logger.LogInformation("Retrieved stats from Redis cache for User {UserId} ({Year}-{Month}).", userId, year, month);
+                return cachedStats;
+            }
+
+            // 3. Gọi song song để tối ưu tốc độ
+            var logsTask = _statsRepo.GetLogsInRangeAsync(userId, year, month);
+            var streakTask = _streakRepo.GetByUserIdAsync(userId);
+            var activitiesTask = _activityRepo.GetAllAsync();
+            var photosTask = _statsRepo.GetTotalPhotosCountAsync(userId);
 
             await Task.WhenAll(logsTask, streakTask, activitiesTask, photosTask);
 
@@ -30,6 +56,7 @@ public class StatisticsService(
             var allActivities = activitiesTask.Result;
             var totalPhotos = photosTask.Result;
 
+            // 4. Xử lý dữ liệu
             var logsWithMood = logs.Where(l => l.BaseMoodId.HasValue).ToList();
             var moodDist = logsWithMood.GroupBy(l => l.BaseMoodId!.Value)
                 .Select(g => new MoodDistributionDto {
@@ -56,9 +83,8 @@ public class StatisticsService(
                 }
             }
 
-            logger.LogInformation("Successfully processed stats for User {UserId} ({Year}-{Month}).", userId, year, month);
-
-            return new UserStatsSummaryDto {
+            // 5. Đóng gói kết quả
+            var result = new UserStatsSummaryDto {
                 TotalLogs = logs.Count,
                 TotalPhotos = totalPhotos,
                 CurrentStreak = streak?.CurrentStreak ?? 0,
@@ -70,10 +96,17 @@ public class StatisticsService(
                 }).ToList(),
                 BestActivities = influences.OrderByDescending(x => x.AverageMoodScore).Take(5).ToList()
             };
+
+            // 6. Lưu vào Cache
+            await _cacheService.SetAsync(cacheKey, result, _cacheTtl);
+
+            _logger.LogInformation("Successfully calculated and cached stats for User {UserId} ({Year}-{Month}).", userId, year, month);
+
+            return result;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "System error while calculating statistics for user {UserId}.", userId);
+            _logger.LogError(ex, "System error while calculating statistics for user {UserId}.", userId);
             return null;
         }
     }

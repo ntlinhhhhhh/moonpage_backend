@@ -1,3 +1,4 @@
+using DiaryApp.Application.DTOs.Queue;
 using DiaryApp.Application.DTOs.User;
 using DiaryApp.Application.Interfaces;
 using DiaryApp.Application.Interfaces.Services;
@@ -8,16 +9,16 @@ namespace DiaryApp.Application.Services;
 public class UserService(
     IUserRepository userRepository,
     IThemeRepository themeRepository,
-    IMomentRepository momentRepository,
     IUserStreakRepository userStreakRepository,
-    IRedisCacheService cacheService
+    IRedisCacheService cacheService,
+    IMessageProducer messageProducer
     ) : IUserService
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IThemeRepository _themeRepository = themeRepository;
-    private readonly IMomentRepository _momentRepository = momentRepository;
     private readonly IUserStreakRepository _userStreakRepository = userStreakRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
+    private readonly IMessageProducer _messageProducer = messageProducer;
 
     public async Task<UserProfileDto> GetProfileAsync(string userId)
     {
@@ -66,20 +67,21 @@ public class UserService(
             birthday: request.Birthday
         );
 
-        await _cacheService.RemoveAsync($"user_profile:{userId}");
-        await _cacheService.RemoveAsync($"auth:email:{user.Email}");
-
-        _ = Task.Run(async () => 
+        var keysToRemove = new List<string>
         {
-            try
-            {
-                await _momentRepository.SyncUserMediaInMomentsAsync(userId, request.Name, request.AvatarUrl);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error syncing moments for user {userId}: {ex.Message}");
-            }
-        });
+            $"user_profile:{userId}",
+            $"auth:email:{user.Email}"
+        };
+        await Task.WhenAll(keysToRemove.Select(key => _cacheService.RemoveAsync(key)));
+
+        var payload = new DatabaseTaskPayload
+        {
+            TaskType = DbTaskType.SyncUserMedia,
+            UserId = userId,
+            UserName = request.Name.Trim(),
+            AvatarUrl = request.AvatarUrl
+        };
+        await _messageProducer.SendMessageAsync(payload, "db_tasks_queue");
     }
 
     public async Task<IEnumerable<UserSearchResponseDto>> SearchUsersAsync(string name, int limit)
@@ -101,7 +103,6 @@ public class UserService(
     public async Task<(bool IsSuccess, string Message)> BuyThemeAsync(string userId, BuyThemeRequestDto request)
     {
         var theme = await _themeRepository.GetByIdAsync(request.ThemeId);
-        
         if (theme == null || !theme.IsActive) 
         {
             return (false, "This theme isn't available or has been discontinued.");
@@ -124,12 +125,15 @@ public class UserService(
             return (false, $"You don't have enough coins. You need {request.Price} coins to purchase this theme.");
         }
 
-        await Task.WhenAll(
-            _userRepository.UpdateCoinBalanceAsync(userId, -request.Price),
-            _userRepository.AddOwnedThemeAsync(userId, request.ThemeId),
-            _cacheService.RemoveAsync($"user_profile:{userId}"),
-            _cacheService.RemoveAsync($"owned_themes:{userId}")
-        );
+        await _userRepository.UpdateCoinBalanceAsync(userId, -request.Price);
+        await _userRepository.AddOwnedThemeAsync(userId, request.ThemeId);
+
+        var keysToRemove = new List<string>
+        {
+            $"user_profile:{userId}",
+            $"owned_themes:{userId}"
+        };
+        await Task.WhenAll(keysToRemove.Select(key => _cacheService.RemoveAsync(key)));
 
         return (true, "Theme purchased successfully!");
     }
@@ -149,10 +153,10 @@ public class UserService(
 
         streak.StreakFreezes += 1;
 
-        await Task.WhenAll(
-            _userRepository.UpdateCoinBalanceAsync(userId, -freezePrice),
-            _userStreakRepository.UpsertAsync(streak)
-        );
+        await _userRepository.UpdateCoinBalanceAsync(userId, -freezePrice);
+        await _userStreakRepository.UpsertAsync(streak);
+
+        await _cacheService.RemoveAsync($"user_profile:{userId}");
 
         return (true, "Streak Freeze purchased successfully! Your streak is now protected.");
     }
@@ -195,10 +199,16 @@ public class UserService(
         {
             throw new KeyNotFoundException("The user you are trying to delete could not be found.");
         }
+        
         await _userRepository.DeleteAsync(userId);
-        await _cacheService.RemoveAsync($"user_profile:{userId}");
-        await _cacheService.RemoveAsync($"auth:email:{user.Email}");
-        await _cacheService.RemoveAsync($"owned_themes:{userId}");
+
+        var keysToRemove = new List<string>
+        {
+            $"user_profile:{userId}",
+            $"auth:email:{user.Email}",
+            $"owned_themes:{userId}"
+        };
+        await Task.WhenAll(keysToRemove.Select(key => _cacheService.RemoveAsync(key)));
     }
 
     public async Task<IEnumerable<UserSearchResponseDto>> GetAllUsersAsync()

@@ -1,16 +1,22 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using DiaryApp.Application.DTOs.Moment;
 using DiaryApp.Application.Interfaces;
 using DiaryApp.Application.Interfaces.Services;
 using DiaryApp.Domain.Entities;
+using DiaryApp.Domain.Enums;
 
 namespace DiaryApp.Application.Services;
 
 public class MomentService(
     IMomentRepository momentRepository,
     IUserRepository userRepository,
-    IRedisCacheService cacheService,
     IMessageProducer messageProducer,
-    IGoogleStorageService googleStorageService
+    IGoogleStorageService googleStorageService,
+    IRedisCacheService cacheService
     ) : IMomentService
 {
     private readonly IMomentRepository _momentRepository = momentRepository;
@@ -22,12 +28,11 @@ public class MomentService(
 
     public async Task<MomentResponseDto> CreateMomentAsync(string userId, MomentRequestDto request)
     {
-        var initialMoment = await CreateInitialMomentAsync(userId, request);
-
+        var responseDto = await CreateInitialMomentAsync(userId, request);
 
         if (request.ImageFile != null && request.ImageFile.Length > 0)
         {
-            var tempFolder = Path.Combine(Directory.GetCurrentDirectory(), "temp_images");
+            var tempFolder = Path.Combine(Path.GetTempPath(), "moonpage_temp_images");
             if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
 
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.ImageFile.FileName)}";
@@ -41,25 +46,17 @@ public class MomentService(
             var payload = new ImageUploadPayload
             {
                 UserId = userId,
-                EntityId = initialMoment.Id,
+                EntityId = responseDto.Id,
                 UploadType = ImageUploadType.Moment,
                 TempImagePath = tempFilePath
             };
 
             await _messageProducer.SendMessageAsync(payload, "image_upload_queue");
+            
+            responseDto.ImageUrl = "processing";
         }
-        return new MomentResponseDto
-        {
-            Id = initialMoment.Id,
-            UserId = initialMoment.UserId,
-            UserName = initialMoment.UserName, 
-            UserAvatarUrl = initialMoment.UserAvatarUrl, 
-            DailyLogId = initialMoment.DailyLogId,
-            ImageUrl = string.Empty, 
-            Caption = initialMoment.Caption,
-            IsPublic = initialMoment.IsPublic,
-            CapturedAt = initialMoment.CapturedAt
-        };
+
+        return responseDto;
     }
 
     public async Task<MomentResponseDto?> GetByIdAsync(string momentId)
@@ -103,8 +100,7 @@ public class MomentService(
         }
 
         await _momentRepository.DeleteAsync(momentId);
-        await _cacheService.RemoveAsync($"moment:{momentId}");
-        await _cacheService.RemoveAsync($"moments_user:{userId}");
+        await ClearMomentAndStatsCacheAsync(momentId, userId, moment.CapturedAt);
     }
 
     public async Task<MomentResponseDto> CreateInitialMomentAsync(string userId, MomentRequestDto request)
@@ -127,8 +123,7 @@ public class MomentService(
         };
 
         await _momentRepository.CreateAsync(newMoment);
-
-        await _cacheService.RemoveAsync($"moments_user:{userId}");
+        await ClearMomentAndStatsCacheAsync(newMoment.Id, userId, newMoment.CapturedAt);
 
         return MapToResponseDto(newMoment);
     }
@@ -140,11 +135,15 @@ public class MomentService(
             throw new KeyNotFoundException("Moment not found for update.");
 
         moment.ImageUrl = imageUrl;
-
         await _momentRepository.UpdateAsync(moment);
 
-        await _cacheService.RemoveAsync($"moment:{momentId}");
-        await _cacheService.RemoveAsync($"moments_user:{moment.UserId}");
+        var keysToRemove = new List<string>
+        {
+            $"moment:{momentId}",
+            $"moments_user:{moment.UserId}"
+        };
+
+        await Task.WhenAll(keysToRemove.Select(key => _cacheService.RemoveAsync(key)));
     }
 
     private MomentResponseDto MapToResponseDto(Moment moment)
@@ -161,5 +160,21 @@ public class MomentService(
             IsPublic = moment.IsPublic,
             CapturedAt = moment.CapturedAt
         };
+    }
+
+    private async Task ClearMomentAndStatsCacheAsync(string momentId, string userId, DateTime capturedDate)
+    {
+        int year = capturedDate.Year;
+        int month = capturedDate.Month;
+
+        var keysToRemove = new List<string>
+        {
+            $"moment:{momentId}",
+            $"moments_user:{userId}",
+            $"stats_summary:{userId}:{year}:{month}",
+            $"stats_summary:{userId}:{year}:0"
+        };
+
+        await Task.WhenAll(keysToRemove.Select(key => _cacheService.RemoveAsync(key)));
     }
 }

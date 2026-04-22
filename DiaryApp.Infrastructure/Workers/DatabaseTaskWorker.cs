@@ -50,12 +50,15 @@ public class DatabaseTaskWorker : BackgroundService
                     switch (data.TaskType)
                     {
                         case DbTaskType.LinkMomentsToLog:
+                        {
                             var momentRepo = scope.ServiceProvider.GetRequiredService<IMomentRepository>();
                             await momentRepo.LinkMomentsToLogAsync(data.UserId, data.DateStr, data.EntityId);
                             _logger.LogInformation("Successfully linked Moments to DailyLog: {LogId} for User: {UserId}", data.EntityId, data.UserId);
                             break;
+                        }
 
                         case DbTaskType.ProcessRewards:
+                        {
                             var streakRepo = scope.ServiceProvider.GetRequiredService<IUserStreakRepository>();
                             var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
                             
@@ -115,7 +118,15 @@ public class DatabaseTaskWorker : BackgroundService
                             
                             _logger.LogInformation("Successfully processed rewards for User {UserId} at {DateStr}.", data.UserId, data.DateStr);
                             break;
-                                                    
+                        }
+
+                        case DbTaskType.SyncUserMedia:
+                        {
+                            var momentRepo = scope.ServiceProvider.GetRequiredService<IMomentRepository>();
+                            await momentRepo.SyncUserMediaInMomentsAsync(data.UserId, data.UserName ?? string.Empty, data.AvatarUrl ?? string.Empty);
+                            _logger.LogInformation("Successfully synced User Media in Moments for User: {UserId}", data.UserId);
+                            break;
+                        }
                     }
                 }
 
