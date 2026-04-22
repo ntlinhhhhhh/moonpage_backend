@@ -1,12 +1,10 @@
+using DiaryApp.Domain.Entities;
 
-// using DiaryApp.Application.DTOs;
-// using DiaryApp.Application.DTOs.Auth;
+namespace DiaryApp.Application.Interfaces.Repositories;
 
-// namespace DiaryApp.Application.Interfaces;
-
-// public interface IStatisticsRepository
-// {
-//     Task<int> GetTotalPhotosCountAsync(string userId);
-
-//     Task<List<DateTime>> GetAllLogDatesAsync(string userId);
-// }
+public interface IStatisticsRepository
+{
+    Task<int> GetTotalPhotosCountAsync(string userId);
+    
+    Task<List<DailyLog>> GetLogsInRangeAsync(string userId, int year, int? month);
+}

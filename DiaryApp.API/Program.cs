@@ -18,6 +18,7 @@ using DiaryApp.Infrastructure.Workers;
 using Microsoft.AspNetCore.ResponseCompression;
 using Google.Api.Gax;
 using DiaryApp.API.Middlewares;
+using DiaryApp.Application.Interfaces.Repositories;
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -138,6 +139,7 @@ builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 builder.Services.AddScoped<IDailyLogRepository, DailyLogRepository>();
 builder.Services.AddScoped<IMomentRepository, MomentRepository>();
 builder.Services.AddScoped<IAppNotificationRepository, AppNotificationRepository>();
+builder.Services.AddScoped<IStatisticsRepository, StatisticsRepository>();
 builder.Services.AddHttpClient<IGoogleStorageService, GoogleStorageService>();
 builder.Services.AddScoped<IUserStreakRepository, UserStreakRepository>();
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
@@ -156,6 +158,7 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
 builder.Services.AddScoped<IFirebaseNotificationService, FirebaseNotificationService>();
 builder.Services.AddScoped<IAppNotificationService, AppNotificationService>();
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
 // controllers & swagger
 builder.Services.AddControllers()

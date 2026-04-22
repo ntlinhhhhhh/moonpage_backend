@@ -1,11 +1,8 @@
+using DiaryApp.Application.DTOs.Statistic;
 
-// using DiaryApp.Application.DTOs;
-// using DiaryApp.Application.DTOs.Auth;
+namespace DiaryApp.Application.Interfaces.Services;
 
-// namespace DiaryApp.Application.Interfaces;
-
-// public interface IStatisticService
-// {
-//     Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request);
-
-// }
+public interface IStatisticsService
+{
+    Task<UserStatsSummaryDto?> GetStatsSummaryAsync(string userId, int year, int? month);
+}

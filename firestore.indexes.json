@@ -9,13 +9,21 @@
       ]
     },
     {
-      "collectionGroup": "dailyLogs",
-      "queryScope": "COLLECTION",
-      "fields": [
+    "collectionGroup": "dailyLogs",
+    "queryScope": "COLLECTION",
+    "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },
         { "fieldPath": "YearMonth", "order": "ASCENDING" },
         { "fieldPath": "Date", "order": "ASCENDING" }
-      ]
+        ]
+    },
+    {
+    "collectionGroup": "dailyLogs",
+    "queryScope": "COLLECTION",
+    "fields": [
+        { "fieldPath": "UserId", "order": "ASCENDING" },
+        { "fieldPath": "Date", "order": "ASCENDING" }
+        ]
     },
     {
       "collectionGroup": "dailyLogs",
