@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   diary-api:
     build:
@@ -5,29 +7,37 @@ services:
       dockerfile: Dockerfile 
     ports:
       - "8000:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Redis__ConnectionString=redis:6379 
+      - RabbitMQSettings__Url=amqp://guest:guest@rabbitmq:5672
+      - FIRESTORE_EMULATOR_HOST=host.docker.internal:3000 
+    depends_on:
+      - redis
+      - rabbitmq
+    restart: unless-stopped 
 
-      # google cloud & firebase
-      - GoogleCloud__ProjectId=moodyfy-3f2dd
-      - GoogleCloud__ClientId=511455154390-m8jmplb158akjj874288pipkt3emset0.apps.googleusercontent.com
-      - GoogleCloud__StorageBucket=moodyfy-3f2dd.firebasestorage.app
+  redis:
+    image: redis:alpine
+    container_name: diary-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
 
-      - GoogleCloud__ServiceAccountPath=/app/firebase-key.json
-      - Firebase__ProjectId=moodyfy-3f2dd
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: diary-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+    restart: unless-stopped
 
-      # jwt settings
-      - JwtSettings__Secret=NNTExNDU1MTU0MzkwLW04am1wbGIxNThha2pqODc0Mjg4cGlwa3QzZW1zZXQwLmFwcHMuZ29vZ2xldXNlcm>
-      - JwtSettings__Issuer=DiaryApp
-      - JwtSettings__Audience=DiaryApp
-      - JwtSettings__ExpiryMinutes=43200
-
-      # email settings
-      - EmailSettings__Email=diaryapp23@gmail.com
-      - EmailSettings__Password=uyozvhaobagwzocc
-      - EmailSettings__Host=smtp.gmail.com
-      - EmailSettings__Port=587
-
-      # redis & rabbitmq
-      - Redis__ConnectionString=diary-redis:6379
-   
+volumes:
+  redis_data:
+  rabbitmq_data:
