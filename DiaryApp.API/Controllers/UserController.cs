@@ -118,27 +118,38 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
-    // POST: api/users/me/themes/buy
-    [HttpPost("me/themes/buy")]
+    // POST: api/users/me/themes/buy-theme
+    [HttpPost("me/store/buy-theme")]
     public async Task<IActionResult> BuyTheme([FromBody] BuyThemeRequestDto request)
     {
-        try
+        var (isSuccess, message) = await _userService.BuyThemeAsync(CurrentUserId, request);
+        
+        if (!isSuccess)
         {
-            await _userService.BuyThemeAsync(CurrentUserId, request);
-            return Ok(new { message = "Theme purchased successfully!" });
+            return BadRequest(new { success = false, message = message });
         }
-        catch (KeyNotFoundException ex)
+
+        return Ok(new { success = true, message = message });
+    }
+
+    // POST: api/users/me/stores/buy-freeze
+    [HttpPost("me/store/buy-freeze")]
+    public async Task<IActionResult> BuyStreakFreeze()
+    {
+        var (isSuccess, message) = await _userService.BuyStreakFreezeAsync(CurrentUserId);
+        
+        if (!isSuccess)
         {
-            return NotFound(new { message = ex.Message }); 
+            return BadRequest(new { 
+                success = false, 
+                message = message 
+            });
         }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message }); 
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+
+        return Ok(new { 
+            success = true, 
+            message = message 
+        });
     }
 
     // PUT: api/users/me/themes/active

@@ -9,8 +9,8 @@ public interface IUserService
     Task<IEnumerable<UserSearchResponseDto>> SearchUsersAsync(string name, int limit);
     Task<List<string>> GetMyThemeIdsAsync(string userId);
     Task ChangeActiveThemeAsync(string userId, UpdateThemeRequestDto request);
-    Task BuyThemeAsync(string userId, BuyThemeRequestDto request);
-
+    Task<(bool IsSuccess, string Message)> BuyThemeAsync(string userId, BuyThemeRequestDto request);
+    Task<(bool IsSuccess, string Message)> BuyStreakFreezeAsync(string userId);
     Task<IEnumerable<UserSearchResponseDto>> GetAllUsersAsync();
     Task DeleteUserAsync(string userId);
 

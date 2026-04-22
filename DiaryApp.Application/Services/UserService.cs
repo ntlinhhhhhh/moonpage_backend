@@ -9,12 +9,14 @@ public class UserService(
     IUserRepository userRepository,
     IThemeRepository themeRepository,
     IMomentRepository momentRepository,
+    IUserStreakRepository userStreakRepository,
     IRedisCacheService cacheService
     ) : IUserService
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IThemeRepository _themeRepository = themeRepository;
     private readonly IMomentRepository _momentRepository = momentRepository;
+    private readonly IUserStreakRepository _userStreakRepository = userStreakRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
 
     public async Task<UserProfileDto> GetProfileAsync(string userId)
@@ -96,34 +98,63 @@ public class UserService(
         });
     }
 
-    public async Task BuyThemeAsync(string userId, BuyThemeRequestDto request)
+    public async Task<(bool IsSuccess, string Message)> BuyThemeAsync(string userId, BuyThemeRequestDto request)
     {
         var theme = await _themeRepository.GetByIdAsync(request.ThemeId);
-    
+        
         if (theme == null || !theme.IsActive) 
         {
-            throw new KeyNotFoundException("This theme isn't available or has been discontinued.");
+            return (false, "This theme isn't available or has been discontinued.");
         }
 
         var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null) throw new KeyNotFoundException("We couldn't find your account info.");
+        if (user == null) 
+        {
+            return (false, "We couldn't find your account info.");
+        }
 
         var ownedThemes = await _userRepository.GetOwnedThemeIdsAsync(userId);
         if (ownedThemes.Contains(request.ThemeId))
         {
-            throw new InvalidOperationException("You already own this theme!");
+            return (false, "You already own this theme!");
         }
 
         if (user.CoinBalance < request.Price)
         {
-            throw new InvalidOperationException($"You don't have enough coins. You need {request.Price} coins to purchase this theme.");
+            return (false, $"You don't have enough coins. You need {request.Price} coins to purchase this theme.");
         }
 
-        await _userRepository.UpdateCoinBalanceAsync(userId, -request.Price);
-        await _userRepository.AddOwnedThemeAsync(userId, request.ThemeId);
+        await Task.WhenAll(
+            _userRepository.UpdateCoinBalanceAsync(userId, -request.Price),
+            _userRepository.AddOwnedThemeAsync(userId, request.ThemeId),
+            _cacheService.RemoveAsync($"user_profile:{userId}"),
+            _cacheService.RemoveAsync($"owned_themes:{userId}")
+        );
 
-        await _cacheService.RemoveAsync($"user_profile:{userId}");
-        await _cacheService.RemoveAsync($"owned_themes:{userId}");
+        return (true, "Theme purchased successfully!");
+    }
+
+    public async Task<(bool IsSuccess, string Message)> BuyStreakFreezeAsync(string userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        int freezePrice = 200;
+
+        if (user == null || user.CoinBalance < freezePrice)
+        {
+            return (false, $"You don't have enough coins. You need {freezePrice} coins to purchase a Streak Freeze.");
+        }
+
+        var streak = await _userStreakRepository.GetByUserIdAsync(userId) 
+                    ?? new UserStreak { UserId = userId };
+
+        streak.StreakFreezes += 1;
+
+        await Task.WhenAll(
+            _userRepository.UpdateCoinBalanceAsync(userId, -freezePrice),
+            _userStreakRepository.UpsertAsync(streak)
+        );
+
+        return (true, "Streak Freeze purchased successfully! Your streak is now protected.");
     }
 
     public async Task ChangeActiveThemeAsync(string userId, UpdateThemeRequestDto request)
