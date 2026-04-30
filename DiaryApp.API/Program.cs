@@ -159,6 +159,7 @@ builder.Services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
 builder.Services.AddScoped<IFirebaseNotificationService, FirebaseNotificationService>();
 builder.Services.AddScoped<IAppNotificationService, AppNotificationService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+// builder.Services.AddScoped<ActivitySeeder>();
 
 // controllers & swagger
 builder.Services.AddControllers()
@@ -216,6 +217,23 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[Firestore] warm-up warning:: {ex.Message}");
     }
 }
+
+// using (var scope = app.Services.CreateScope())
+// {
+//     var services = scope.ServiceProvider;
+//     try
+//     {
+//         // Lấy ActivitySeeder ra từ DI Container
+//         var seeder = services.GetRequiredService<ActivitySeeder>();
+        
+//         // Chạy hàm Seed
+//         await seeder.SeedActivitiesAsync();
+//     }
+//     catch (Exception ex)
+//     {
+//         Console.WriteLine($"Lỗi khi chạy Seeder: {ex.Message}");
+//     }
+// }
 
 app.MapGet("/", () => Results.Ok("DiaryApp API is Online!"));
 app.Run();

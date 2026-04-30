@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using DiaryApp.Application.Interfaces;
 using DiaryApp.Application.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +47,14 @@ public class ImageUploadWorker : BackgroundService
                 try
                 {
                     using var stream = File.OpenRead(data.TempImagePath);
-                    var folder = data.UploadType == ImageUploadType.DailyLog ? "dailylogs" : "moments";
+                    var folder = data.UploadType switch
+                    {
+                        ImageUploadType.DailyLog => "dailylogs",
+                        ImageUploadType.Avatar => "avatars",
+                        ImageUploadType.Moment => "moments",
+                        _ => "others"
+                    };
+
                     var fileName = Path.GetFileName(data.TempImagePath);
                     var imageUrl = await storageService.UploadImageAsync(stream, fileName, folder);
 
@@ -61,6 +69,10 @@ public class ImageUploadWorker : BackgroundService
                         {
                             var logService = scope.ServiceProvider.GetRequiredService<IDailyLogService>();
                             await logService.AddPhotoToLogAsync(data.UserId, data.EntityId, imageUrl);
+                        } else if (data.UploadType == ImageUploadType.Avatar)
+                        {
+                            var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+                            await userService.UpdateAvatarUrlAsync(data.UserId, imageUrl);
                         }
                     }
 

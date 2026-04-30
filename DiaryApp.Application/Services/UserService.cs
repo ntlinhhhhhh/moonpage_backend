@@ -3,6 +3,7 @@ using DiaryApp.Application.DTOs.User;
 using DiaryApp.Application.Interfaces;
 using DiaryApp.Application.Interfaces.Services;
 using DiaryApp.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 
 namespace DiaryApp.Application.Services;
 
@@ -82,6 +83,64 @@ public class UserService(
             AvatarUrl = request.AvatarUrl
         };
         await _messageProducer.SendMessageAsync(payload, "db_tasks_queue");
+    }
+
+    public async Task UploadAvatarAsync(string userId, UploadAvatarRequestDto request)
+    {
+        var tempPath = await SaveTempFileAsync(request.ImageFile, userId);
+
+        var payload = new ImageUploadPayload
+        {
+            UserId = userId,
+            EntityId = userId,
+            UploadType = ImageUploadType.Avatar,
+            TempImagePath = tempPath
+        };
+
+        await _messageProducer.SendMessageAsync(payload, "image_upload_queue");
+    }
+
+    private async Task<string> SaveTempFileAsync(IFormFile file, string userId)
+    {
+        var tempFolder = Path.Combine(Path.GetTempPath(), "moonpage_temp_images", "avatars");
+        if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
+
+        var fileName = $"{userId}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        var filePath = Path.Combine(tempFolder, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        return filePath;
+    }
+
+    public async Task UpdateAvatarUrlAsync(string userId, string imageUrl)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null) throw new KeyNotFoundException("User not found.");
+
+        await _userRepository.UpdateProfileAsync(
+            userId: userId,
+            name: user.Name,
+            newPassword: null,
+            avatarUrl: imageUrl,
+            gender: user.Gender,
+            birthday: user.Birthday
+        );
+
+        var keysToRemove = new List<string> { $"user_profile:{userId}", $"auth:email:{user.Email}" };
+        await Task.WhenAll(keysToRemove.Select(k => _cacheService.RemoveAsync(k)));
+
+        var syncPayload = new DatabaseTaskPayload
+        {
+            TaskType = DbTaskType.SyncUserMedia,
+            UserId = userId,
+            UserName = user.Name,
+            AvatarUrl = imageUrl
+        };
+        await _messageProducer.SendMessageAsync(syncPayload, "db_tasks_queue");
     }
 
     public async Task<IEnumerable<UserSearchResponseDto>> SearchUsersAsync(string name, int limit)

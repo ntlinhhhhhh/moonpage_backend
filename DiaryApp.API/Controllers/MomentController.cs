@@ -35,7 +35,6 @@ public class MomentController(
     {
         if (request.ImageFile == null || request.ImageFile.Length == 0)
             return BadRequest(new { message = "Please attach the photo!" });
-
         try
         {
             var response = await _momentService.CreateMomentAsync(CurrentUserId, request);

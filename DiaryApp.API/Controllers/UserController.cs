@@ -88,6 +88,18 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
+    [HttpPut("me/avatar")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateAvatar([FromForm] UploadAvatarRequestDto request)
+    {
+        if (request.ImageFile == null || request.ImageFile.Length == 0)
+            return BadRequest(new { message = "Please upload an image." });
+
+        await _userService.UploadAvatarAsync(CurrentUserId, request);
+
+        return Accepted(new { message = "Avatar is being processed." });
+    }
+
     // GET: api/users/search?name=abc&limit=10
     [HttpGet("search")]
     public async Task<IActionResult> SearchUsers([FromQuery] string name, [FromQuery] int limit)

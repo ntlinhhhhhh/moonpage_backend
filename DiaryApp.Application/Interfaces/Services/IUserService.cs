@@ -6,6 +6,8 @@ public interface IUserService
 {
     Task<UserProfileDto> GetProfileAsync(string userId);
     Task UpdateProfileAsync(string userId, UpdateProfileRequestDto request);
+    Task UploadAvatarAsync(string userId, UploadAvatarRequestDto request);
+    Task UpdateAvatarUrlAsync(string userId, string avatarUrl);
     Task<IEnumerable<UserSearchResponseDto>> SearchUsersAsync(string name, int limit);
     Task<List<string>> GetMyThemeIdsAsync(string userId);
     Task ChangeActiveThemeAsync(string userId, UpdateThemeRequestDto request);
