@@ -12,7 +12,8 @@ public class UserService(
     IThemeRepository themeRepository,
     IUserStreakRepository userStreakRepository,
     IRedisCacheService cacheService,
-    IMessageProducer messageProducer
+    IMessageProducer messageProducer,
+    IGoogleStorageService googleStorageService
     ) : IUserService
 {
     private readonly IUserRepository _userRepository = userRepository;
@@ -20,7 +21,8 @@ public class UserService(
     private readonly IUserStreakRepository _userStreakRepository = userStreakRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
     private readonly IMessageProducer _messageProducer = messageProducer;
-
+    private readonly IGoogleStorageService _googleStorageService = googleStorageService;
+    
     public async Task<UserProfileDto> GetProfileAsync(string userId)
     {
         string cacheKey = $"user_profile:{userId}";
@@ -40,7 +42,7 @@ public class UserService(
             Email = user.Email,
             Name = user.Name,
             Role = user.Role.ToString(),
-            AvatarUrl = user.AvatarUrl,
+            AvatarUrl = _googleStorageService.GetImageUrl(user.AvatarUrl),
             Gender = user.Gender,
             Birthday = user.Birthday,
             CoinBalance = user.CoinBalance,
