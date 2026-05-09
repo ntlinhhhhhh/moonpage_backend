@@ -197,7 +197,7 @@ public class AuthService(
         };
         var tokenCacheKey = GetResetTokenKey(request.Email);
         
-        await _cacheService.SetAsync(tokenCacheKey, resetToken, TimeSpan.FromMinutes(10));
+        await _cacheService.SetAsync(tokenCacheKey, resetToken.ResetToken, TimeSpan.FromMinutes(10));
 
         return resetToken;
     }
