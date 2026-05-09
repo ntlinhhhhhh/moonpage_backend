@@ -53,6 +53,8 @@ public class DailyLogService(
                 SleepHours = request.SleepHours,
                 IsMenstruation = request.IsMenstruation,
                 MenstruationPhase = request.MenstruationPhase,
+                Steps = request.Steps ?? 0,
+                MusicRecord = request.MusicRecord,
                 DailyPhotos = new List<string>(),
                 CreatedAt = DateTime.UtcNow,
                 ActivityIds = request.ActivityIds ?? new List<string>(),
@@ -202,6 +204,8 @@ public class DailyLogService(
             SleepHours = log.SleepHours,
             IsMenstruation = log.IsMenstruation,
             MenstruationPhase = log.MenstruationPhase,
+            Steps = log.Steps,
+            MusicRecord = log.MusicRecord,
             DailyPhotos = log.DailyPhotos.Select(_googleStorageService.GetImageUrl).ToList(),
             ActivityIds = log.ActivityIds ?? new List<string>(),
             CreatedAt = log.CreatedAt

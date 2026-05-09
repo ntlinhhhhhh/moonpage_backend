@@ -10,6 +10,8 @@ public class DailyLogRequestDto
     public double SleepHours { get; set; }
     public bool IsMenstruation { get; set; }
     public string? MenstruationPhase { get; set; }
+    public int? Steps { get; set; }
+    public string? MusicRecord { get; set; }
     public List<IFormFile> DailyPhotos { get; set; } = new();
     public List<string> ActivityIds { get; set; } = new();
 }

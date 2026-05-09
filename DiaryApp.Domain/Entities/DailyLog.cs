@@ -11,6 +11,8 @@ public class DailyLog
     public double SleepHours { get; set; } = 0;
     public bool IsMenstruation { get; set; } = false;
     public string? MenstruationPhase { get; set; } // detail of menstruation
+    public int Steps { get; set; } = 0;
+    public string? MusicRecord { get; set; }
     public string? Note { get; set; }
     public string Date { get; set; } = string.Empty;
     public required string YearMonth { get; set; }
