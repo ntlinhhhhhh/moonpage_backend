@@ -31,6 +31,7 @@ public class UserController(IUserService userService) : ControllerBase
     }
 
     // DELETE: api/users/{id}
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(string id)
     {
@@ -76,6 +77,25 @@ public class UserController(IUserService userService) : ControllerBase
         {
             await _userService.UpdateProfileAsync(CurrentUserId, request);
             return Ok(new { message = "Your profile has been updated successfully!" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message }); 
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // DELETE: api/users/me
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteMyAccount()
+    {
+        try
+        {
+            await _userService.DeleteUserAsync(CurrentUserId);
+            return Ok(new { message = "Your account has been deleted successfully." });
         }
         catch (KeyNotFoundException ex)
         {
