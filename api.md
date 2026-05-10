@@ -1,307 +1,426 @@
-# API INTEGRATION DOCUMENTATION - DIARYAPP (MOODIFY)
+# API INTEGRATION DOCUMENTATION - MOONPAGE (MOODIFY)
 
-This document provides the complete list of API endpoints, Request/Response structures (DTOs), and data validation rules required for Frontend and Backend integration.
+This document provides a comprehensive list of all API endpoints, their purposes, request/response structures, and authentication requirements.
 
 ## 1. Base Configuration
 * **Base URL:** `http://<server-domain>` (e.g., local development: `http://localhost:8000`)
-* **Authentication:** Most APIs require user authentication. Attach the header `Authorization: Bearer <access_token>` (Token is obtained from the Login API).
-* **Content-Type:** Default is `application/json`.
+* **Authentication:** Most APIs require a Bearer Token. Include the header: `Authorization: Bearer <access_token>`.
+* **Content-Type:** 
+    * Most endpoints: `application/json`
+    * Upload endpoints: `multipart/form-data`
 
 ---
 
-## 2. Auth Module
-*Manages account lifecycle: Registration, login, and password recovery.*
+## 2. Auth Module (`api/auth`)
+*Manages user authentication, registration, and password recovery.*
 
 ### 2.1. Register Account
 * **Endpoint:** `POST /api/auth/register`
 * **Description:** Create a new user account.
-* **Body:**
+* **Request Body:**
 ```json
 {
-  "email": "user@email.com", // Required, valid email format
-  "password": "password123", // Required, minimum 6 characters
-  "name": "Nguyen Van A"     // Required, length between 4 - 50 characters
+  "email": "user@email.com",
+  "password": "password123", // Min 6 chars
+  "name": "User Name"        // 4-50 chars
 }
 ```
+* **Response (200 OK):** `AuthResponseDto`
 
 ### 2.2. Standard Login
-* **Endpoint:** POST /api/auth/login
-* **Description:** Authenticate user via email and password to receive an access token.
-
-Body:
-
+* **Endpoint:** `POST /api/auth/login`
+* **Description:** Authenticate with email and password.
+* **Request Body:**
 ```json
-JSON
 {
-  "email": "user@email.com", // Required
-  "password": "password123"  // Required, minimum 6 characters
+  "email": "user@email.com",
+  "password": "password123"
 }
 ```
+* **Response (200 OK):** `AuthResponseDto`
 
 ### 2.3. Google Login (SSO)
-* **Endpoint:** POST /api/auth/google-login
-
-* **Description:** Authenticate user using Google Single Sign-On.
-
-Body:
+* **Endpoint:** `POST /api/auth/google-login`
+* **Description:** Authenticate using Google ID Token.
+* **Request Body:**
 ```json
-JSON
 {
-  "idToken": "google_jwt_token" // Optional (Retrieved from Google SDK on the Client side)
+  "idToken": "google_id_token"
 }
 ```
+* **Response (200 OK):** `AuthResponseDto`
 
-### 2.4. Verify OTP
-* **Endpoint:** POST /api/auth/verify-otp
-
-* **Description:** Verify the OTP code sent to the user's email.
-
-Body:
+### 2.4. Forgot Password
+* **Endpoint:** `POST /api/auth/forgot-password`
+* **Description:** Request an OTP for password reset.
+* **Request Body:**
 ```json
-JSON
 {
-  "email": "user@email.com", // Required
-  "otpCode": "123456"        // Required
+  "email": "user@email.com"
 }
 ```
+* **Response (200 OK):** `{ "message": "..." }`
 
-### 2.5. Forgot Password (Request OTP)
-* **Endpoint:** POST /api/auth/forgot-password
-
-* **Description:** Request an OTP code to be sent to the user's email for password recovery.
-
-Body:
+### 2.5. Verify OTP
+* **Endpoint:** `POST /api/auth/verify-otp`
+* **Description:** Verify the OTP sent via email.
+* **Request Body:**
 ```json
-JSON
 {
-  "email": "user@email.com" // Required
+  "email": "user@email.com",
+  "otpCode": "123456"
 }
 ```
+* **Response (200 OK):** `VerifyOtpResponseDto` (Contains `resetToken`)
 
 ### 2.6. Reset Password
-* **Endpoint:** POST /api/auth/reset-password
-
-* **Description:** Set a new password after successful OTP verification.
-
-Body:
-```json
-JSON
-{
-  "email": "user@email.com",    // Required
-  "resetToken": "token_string", // Required, obtained from the verify-otp step
-  "newPassword": "newPassword"  // Required, minimum 6 characters
-}
-```
-
-## 3. User Module
-*Manages personal profile information and the user's theme inventory.*
-
-### 3.1. Standard Endpoints
-
-* `GET /api/users` - Retrieve a list of all users (Admin only).
-
-* `GET /api/users/me` - Retrieve the profile of the currently authenticated user.
-
-* `GET /api/users/search` - Search for users.
-
-* `GET /api/users/me/themes` - Retrieve the list of themes owned by the current.
-
-* `DELETE /api/users/{id}` - Delete a specific user by ID.
-
-### 3.2. Update Profile
-* **Endpoint:** PUT /api/users/me
-
-* **Description:** Update current user's profile information.
-
-Body:
-```json
-JSON
-{
-  "name": "New Name",           // Required, minimum 1 character
-  "avatarUrl": "https://...",   // Optional (Nullable)
-  "gender": "Male",             // Optional (Nullable)
-  "birthday": "2000-01-01"      // Optional (Nullable), ISO Date string
-}
-```
-
-### 3.3. Buy Theme
-* **Endpoint:** POST /api/users/me/themes/buy
-
-* **Description:** Purchase a new theme from the store.
-
-Body:
-```json
-JSON
-{
-  "themeId": "theme_id_here", // Required
-  "price": 150                // Integer (Int32)
-}
-```
-
-### 3.4. Activate Theme
-* **Endpoint:** PUT /api/users/me/themes/active
-
-* **Description:** Set a specific owned theme as the active theme.
-
-Body:
-```json
-JSON
-{
-  "themeId": "theme_id_here"  // Required
-}
-```
-
-## 4. DailyLog Module
-*Core feature: Recording daily moods, sleep hours, and cycle tracking.*
-
-### 4.1. Standard Endpoints
-* `GET /api/dailylogs/date/{date}` - Retrieve a daily log by specific date (Format: YYYY-MM-DD).
-
-* `DELETE /api/dailylogs/date/{date}` - Delete a daily log by date.
-
-* `GET /api/dailylogs/month/{yearMonth}` - Retrieve all logs for a specific month (Used for Calendar view, format: YYYY-MM).
-
-* `GET /api/dailylogs/activity/{activityId}/month/{yearMonth}` - Filter logs by a specific activity in a given month.
-
-* `GET /api/dailylogs/mood/{moodId}` - Filter logs by a specific mood level.
-
-* `GET /api/dailylogs/menstruation` - Retrieve menstruation cycle data.
-
-* `GET /api/dailylogs/search` - General search for daily logs.
-
-## 4.2. Create / Update Daily Log
-* **Endpoint:** POST /api/dailylogs
-
-* **Description:** Create a new log for the day or update an existing one.
-
-Body:
-```
-JSON
-{
-  "baseMoodId": 4,                    // Integer (Int32). Enum from 1 to 5 representing mood levels
-  "date": "2024-04-20",               // Required. Date of the log
-  "note": "Today was a good day",     // Optional. Journal note
-  "sleepHours": 8.5,                  // Double. Number of hours slept
-  "isMenstruation": false,            // Boolean. Indicates if the user is in menstruation cycle
-  "menstruationPhase": "Ovulation",   // Optional. Current phase of the cycle
-  "dailyPhotos": ["url1", "url2"],    // Array of Strings. Attached photo URLs
-  "activityIds": ["act1", "act2"]     // Array of Strings. IDs of the activities performed
-}
-```
-
-## 5. Activity Module
-*Activity tags that users can attach to their Daily Logs.*
-
-### 5.1. Standard Endpoints
-* `GET /api/activities` - Retrieve all available activities.
-
-* `GET /api/activities/category/{category}` - Retrieve activities filtered by category.
-
-* `GET /api/activities/{id}` - Retrieve details of a specific activity.
-
-* `DELETE /api/activities/{id}` - Delete an activity.
-
-### 5.2. Create / Update Activity
-* **Endpoints:**   `POST /api/activities or PUT /api/activities/{id}`
-
-* **Description:** Create a new activity or update an existing one (Usually Admin).
-
-Body:
-```
-JSON
-{
-  "name": "Reading",        // Required, minimum 1 character
-  "iconUrl": "https://...", // Required, minimum 1 character
-  "category": "Hobby"       // Required
-}
-```
-
-## 6. Theme Module
-*UI configurations and custom mood icon sets.*
-
-### 6.1. Standard Endpoints
-* `GET /api/themes` - Retrieve the list of available themes in the store.
-* `GET /api/themes/{id}` - Retrieve details of a specific theme.
-* `GET /api/themes/{id}/moods` - Retrieve the custom mood icon set associated with a specific theme.
-* `DELETE /api/themes/{id}` - Delete a theme.
-
-### 6.2. Create / Update Theme
-* **Endpoints:** `POST /api/themes` or `PUT /api/themes/{id}`
-* **Description:** Publish a new theme to the store or update an existing one.
-* **Body:**
+* **Endpoint:** `POST /api/auth/reset-password`
+* **Description:** Set a new password using the reset token.
+* **Request Body:**
 ```json
 {
-  "id": "theme_01",              // Required
-  "name": "Ocean Blue",          // Required
-  "price": 200,                  // Integer (From 0 to 2147483647)
-  "thumbnailUrl": "https://...", // Optional
-  "backgroundUrl": "https://...",// Optional
-  "isActive": true,              // Boolean
-  "moods": [                     // Array of associated custom moods
-    {
-      "baseMoodId": 1,           // Required. Enum [1, 2, 3, 4, 5]
-      "iconUrl": "https://...",  // Required
-      "customName": "Very Sad"   // Optional
-    }
-  ]
+  "email": "user@email.com",
+  "resetToken": "token_from_verify_otp",
+  "newPassword": "new_secure_password"
 }
 ```
+* **Response (200 OK):** `{ "message": "..." }`
 
-7. Moment Module
-Social sharing and moment management.
+### 2.7. Logout
+* **Endpoint:** `POST /api/auth/logout`
+* **Auth Required:** Yes
+* **Description:** Invalidate the current session/token.
+* **Response (200 OK):** `{ "message": "..." }`
 
-* `GET /api/moments/me` - Retrieve moments posted by the current user.
+---
 
-*  `GET /api/moments/user/{userId}` - Retrieve moments posted by a specific user.
+## 3. User Module (`api/users`)
+*Manages user profiles, themes, and store interactions.*
 
-* `GET /api/moments/{id}` - Retrieve details of a specific moment.
+### 3.1. Get All Users (Admin)
+* **Endpoint:** `GET /api/users`
+* **Auth Required:** Yes (Role: Admin)
+* **Response (200 OK):** `List<UserProfileDto>`
 
-* `DELETE /api/moments/{id}` - Delete a moment by ID.
+### 3.2. Delete User (Admin)
+* **Endpoint:** `DELETE /api/users/{id}`
+* **Auth Required:** Yes (Role: Admin)
+* **Response (200 OK):** `{ "message": "..." }`
 
-* `POST /api/moments` - Post a new moment (Ensure proper multipart/form-data handling if uploading images directly).
+### 3.3. Get My Profile
+* **Endpoint:** `GET /api/users/me`
+* **Auth Required:** Yes
+* **Response (200 OK):** `UserProfileDto`
 
+### 3.4. Update My Profile
+* **Endpoint:** `PUT /api/users/me`
+* **Auth Required:** Yes
+* **Request Body:** `UpdateProfileRequestDto`
+```json
+{
+  "name": "New Name",
+  "avatarUrl": "Optional existing URL",
+  "gender": "Male/Female/Other",
+  "birthday": "YYYY-MM-DD"
+}
+```
+* **Response (200 OK):** `{ "message": "..." }`
 
-## 8. Notification Module
-*In-app notifications and Push notification management.*
+### 3.5. Update Avatar
+* **Endpoint:** `PUT /api/users/me/avatar`
+* **Auth Required:** Yes
+* **Content-Type:** `multipart/form-data`
+* **Request Form:**
+    * `ImageFile`: File (The image to upload)
+* **Response (202 Accepted):** `{ "message": "..." }`
 
-### 8.1. Management Endpoints
-* `GET /api/notifications` - Retrieve the user's notification list.
+### 3.6. Search Users
+* **Endpoint:** `GET /api/users/search?name={name}&limit={limit}`
+* **Auth Required:** Yes
+* **Response (200 OK):** `List<UserSearchResponseDto>`
 
-* `PUT /api/notifications/{id}/read` - Mark a specific notification as "Read".
+### 3.7. Get My Themes
+* **Endpoint:** `GET /api/users/me/themes`
+* **Auth Required:** Yes
+* **Description:** Get list of Theme IDs owned by the user.
+* **Response (200 OK):** `List<string>`
 
-* `DELETE /api/notifications/{id}` - Delete a specific notification.
+### 3.8. Buy Theme
+* **Endpoint:** `POST /api/users/me/store/buy-theme`
+* **Auth Required:** Yes
+* **Request Body:**
+```json
+{
+  "themeId": "theme_id",
+  "price": 100
+}
+```
+* **Response (200 OK):** `{ "success": true, "message": "..." }`
 
-* `DELETE /api/notifications/all` - Delete all notifications for the current user.
+### 3.9. Buy Streak Freeze
+* **Endpoint:** `POST /api/users/me/store/buy-freeze`
+* **Auth Required:** Yes
+* **Response (200 OK):** `{ "success": true, "message": "..." }`
+
+### 3.10. Activate Theme
+* **Endpoint:** `PUT /api/users/me/themes/active`
+* **Auth Required:** Yes
+* **Request Body:**
+```json
+{
+  "themeId": "theme_id"
+}
+```
+* **Response (200 OK):** `{ "message": "..." }`
+
+---
+
+## 4. DailyLog Module (`api/dailylogs`)
+*Core module for mood and activity tracking.*
+
+### 4.1. Upsert Daily Log
+* **Endpoint:** `POST /api/dailylogs`
+* **Auth Required:** Yes
+* **Content-Type:** `multipart/form-data`
+* **Description:** Create or update a log for a specific date.
+* **Request Form:**
+    * `BaseMoodId`: int (1-5)
+    * `Date`: string (YYYY-MM-DD)
+    * `Note`: string (Optional)
+    * `SleepHours`: double
+    * `IsMenstruation`: bool
+    * `MenstruationPhase`: string (Optional)
+    * `Steps`: int (Optional)
+    * `MusicRecord`: string (Optional)
+    * `DailyPhotos`: List<File>
+    * `ActivityIds`: List<string>
+* **Response (200 OK):** `{ "message": "..." }`
+
+### 4.2. Get Log by Date
+* **Endpoint:** `GET /api/dailylogs/date/{date}`
+* **Description:** Date format: YYYY-MM-DD.
+* **Response (200 OK):** `DailyLogResponseDto`
+
+### 4.3. Get Logs by Month
+* **Endpoint:** `GET /api/dailylogs/month/{yearMonth}`
+* **Description:** Format: YYYY-MM.
+* **Response (200 OK):** `List<DailyLogResponseDto>`
+
+### 4.4. Get Logs by Activity
+* **Endpoint:** `GET /api/dailylogs/activity/{activityId}/month/{yearMonth}`
+* **Response (200 OK):** `List<DailyLogResponseDto>`
+
+### 4.5. Get Logs by Mood
+* **Endpoint:** `GET /api/dailylogs/mood/{moodId}`
+* **Response (200 OK):** `List<DailyLogResponseDto>`
+
+### 4.6. Filter by Menstruation
+* **Endpoint:** `GET /api/dailylogs/menstruation?isMenstruation={bool}`
+* **Response (200 OK):** `List<DailyLogResponseDto>`
+
+### 4.7. Search Logs by Note
+* **Endpoint:** `GET /api/dailylogs/search?keyword={text}`
+* **Response (200 OK):** `List<DailyLogResponseDto>`
+
+### 4.8. Delete Log
+* **Endpoint:** `DELETE /api/dailylogs/date/{date}`
+* **Response (200 OK):** `{ "message": "..." }`
+
+---
+
+## 5. Activity Module (`api/activities`)
+*Manages activity tags.*
+
+### 5.1. Get All Activities
+* **Endpoint:** `GET /api/activities`
+* **Response (200 OK):** `List<ActivityResponseDto>`
+
+### 5.2. Get by Category
+* **Endpoint:** `GET /api/activities/category/{category}`
+* **Response (200 OK):** `List<ActivityResponseDto>`
+
+### 5.3. Get Activity Details
+* **Endpoint:** `GET /api/activities/{id}`
+* **Response (200 OK):** `ActivityResponseDto`
+
+### 5.4. Create Activity (Admin)
+* **Endpoint:** `POST /api/activities`
+* **Auth Required:** Yes (Role: Admin)
+* **Request Body:** `ActivityRequestDto`
+* **Response (201 Created):** `ActivityResponseDto`
+
+### 5.5. Update Activity (Admin)
+* **Endpoint:** `PUT /api/activities/{id}`
+* **Auth Required:** Yes (Role: Admin)
+* **Request Body:** `ActivityRequestDto`
+* **Response (200 OK):** `{ "message": "..." }`
+
+### 5.6. Delete Activity (Admin)
+* **Endpoint:** `DELETE /api/activities/{id}`
+* **Auth Required:** Yes (Role: Admin)
+* **Response (200 OK):** `{ "message": "..." }`
+
+---
+
+## 6. Theme Module (`api/themes`)
+*Manages UI themes and mood icons.*
+
+### 6.1. Get All Active Themes
+* **Endpoint:** `GET /api/themes`
+* **Response (200 OK):** `List<ThemeResponseDto>`
+
+### 6.2. Get Theme Details
+* **Endpoint:** `GET /api/themes/{id}`
+* **Response (200 OK):** `ThemeResponseDto` (Full details)
+
+### 6.3. Get Theme Mood Icons
+* **Endpoint:** `GET /api/themes/{id}/moods`
+* **Response (200 OK):** `List<ThemeMoodResponseDto>`
+
+### 6.4. Create Theme (Admin)
+* **Endpoint:** `POST /api/themes`
+* **Auth Required:** Yes (Role: Admin)
+* **Request Body:** `CreateThemeRequestDto`
+* **Response (201 Created):** `{ "message": "..." }`
+
+### 6.5. Update Theme (Admin)
+* **Endpoint:** `PUT /api/themes/{id}`
+* **Auth Required:** Yes (Role: Admin)
+* **Request Body:** `CreateThemeRequestDto`
+* **Response (200 OK):** `{ "message": "..." }`
+
+### 6.6. Delete Theme (Admin)
+* **Endpoint:** `DELETE /api/themes/{id}`
+* **Auth Required:** Yes (Role: Admin)
+* **Response (200 OK):** `{ "message": "..." }`
+
+---
+
+## 7. Moment Module (`api/moments`)
+*Social sharing of daily logs/photos.*
+
+### 7.1. Create Moment
+* **Endpoint:** `POST /api/moments`
+* **Auth Required:** Yes
+* **Content-Type:** `multipart/form-data`
+* **Request Form:**
+    * `DailyLogId`: string (Optional)
+    * `ImageFile`: File (Required)
+    * `Caption`: string (Optional)
+    * `IsPublic`: bool
+    * `CapturedAt`: DateTime (Optional)
+* **Response (202 Accepted):** `MomentResponseDto`
+
+### 7.2. Get Moment Details
+* **Endpoint:** `GET /api/moments/{id}`
+* **Response (200 OK):** `MomentResponseDto`
+
+### 7.3. Get My Moments
+* **Endpoint:** `GET /api/moments/me`
+* **Response (200 OK):** `List<MomentResponseDto>`
+
+### 7.4. Get User's Moments
+* **Endpoint:** `GET /api/moments/user/{userId}`
+* **Response (200 OK):** `List<MomentResponseDto>`
+
+### 7.5. Delete Moment
+* **Endpoint:** `DELETE /api/moments/{id}`
+* **Response (200 OK):** `{ "message": "..." }`
+
+---
+
+## 8. Notification Module (`api/notifications`)
+*In-app and push notifications.*
+
+### 8.1. Send Push Notification (Dev/Test)
+* **Endpoint:** `POST /api/notifications/send`
+* **Request Body:** `PushNotificationRequestDto`
+* **Response (200 OK):** `{ "Success": true, "MessageId": "..." }`
 
 ### 8.2. Create In-App Notification
-* **Endpoint:** POST /api/notifications
+* **Endpoint:** `POST /api/notifications`
+* **Request Body:** `AppNotificationRequestDto`
+* **Response (201 Created):** `{ "Success": true, "Data": ... }`
 
-* **Description:** Create a system notification to be saved in the database.
+### 8.3. Get My Notifications
+* **Endpoint:** `GET /api/notifications`
+* **Auth Required:** Yes
+* **Response (200 OK):** `{ "Success": true, "Data": List<AppNotificationResponseDto> }`
 
-Body:
-```
-JSON
+### 8.4. Mark as Read
+* **Endpoint:** `PUT /api/notifications/{id}/read`
+* **Response (204 No Content)**
+
+### 8.5. Delete Notification
+* **Endpoint:** `DELETE /api/notifications/{id}`
+* **Response (204 No Content)**
+
+### 8.6. Delete All My Notifications
+* **Endpoint:** `DELETE /api/notifications/all`
+* **Response (200 OK):** `{ "Success": true, "Message": "..." }`
+
+---
+
+## 9. Statistics Module (`api/statistics`)
+*User data analytics.*
+
+### 9.1. Get Stats Summary
+* **Endpoint:** `GET /api/statistics/summary?year={int}&month={int}`
+* **Auth Required:** Yes
+* **Response (200 OK):** `UserStatsSummaryDto`
+    * `TotalLogs`: int
+    * `TotalPhotos`: int
+    * `CurrentStreak`: int
+    * `LongestStreak`: int
+    * `MoodDistribution`: List of `{ Label, Count, Percentage }`
+    * `MoodFlow`: List of `{ Date, MoodId }`
+    * `BestActivities`: List of `{ ActivityId, ActivityName, IconUrl, AverageMoodScore, Occurrence }`
+
+---
+
+## 10. Data Structures (DTOs)
+
+### AuthResponseDto
+```json
 {
-  "userId": "user_123",   // Optional. Target user ID
-  "title": "Alert",       // Optional
-  "message": "Content",   // Optional
-  "type": "System"        // Optional (e.g., System, Promo, Alert)
+  "token": "string",
+  "userId": "string",
+  "name": "string",
+  "avatarUrl": "string?"
 }
 ```
 
-### 8.3. Send Push Notification
-* **Endpoint:** POST /api/notifications/send
-
-* **Description:** Trigger a push notification to a device (Integrates with FCM/APNs).
-
-Body:
-```
-JSON
+### UserProfileDto
+```json
 {
-  "token": "device_fcm_token", // Optional
-  "title": "Notification Title", // Optional
-  "body": "Push content body"    // Optional
+  "id": "string",
+  "email": "string",
+  "name": "string",
+  "role": "string",
+  "avatarUrl": "string?",
+  "gender": "string?",
+  "birthday": "string?",
+  "coinBalance": "int",
+  "activeThemeId": "string",
+  "authProvider": "string",
+  "createdAt": "DateTime"
 }
 ```
-9. System (Health Check)
-* `GET /` - Root endpoint to verify if the API server is up and running (Health Check).
+
+### DailyLogResponseDto
+```json
+{
+  "id": "string",
+  "baseMoodId": "int?",
+  "date": "string (YYYY-MM-DD)",
+  "note": "string?",
+  "sleepHours": "double",
+  "isMenstruation": "bool",
+  "menstruationPhase": "string?",
+  "steps": "int",
+  "musicRecord": "string?",
+  "dailyPhotos": ["string (URLs)"],
+  "activityIds": ["string (IDs)"],
+  "createdAt": "DateTime"
+}
+```
