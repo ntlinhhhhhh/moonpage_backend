@@ -31,7 +31,6 @@ public class UserController(IUserService userService) : ControllerBase
     }
 
     // DELETE: api/users/{id}
-    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(string id)
     {
