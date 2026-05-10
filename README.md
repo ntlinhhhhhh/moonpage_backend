@@ -1,4 +1,4 @@
-# Moonpage (Moodify) Backend
+# Moonpage Backend
 
 Moonpage is a comprehensive diary and mood tracking application backend built with .NET 8. It leverages Google Firebase/Firestore for data storage, Redis for caching, RabbitMQ for asynchronous tasks, and Google Cloud Storage for media assets.
 
