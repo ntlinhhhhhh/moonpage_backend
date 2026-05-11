@@ -94,8 +94,43 @@ public class StatisticsService(
                     Date = l.Date, 
                     MoodId = l.BaseMoodId!.Value 
                 }).ToList(),
-                BestActivities = influences.OrderByDescending(x => x.AverageMoodScore).Take(5).ToList()
+                BestActivities = influences.OrderByDescending(x => x.AverageMoodScore).Take(5).ToList(),
+
+                // New stats calculation
+                TotalSteps = logs.Sum(l => l.Steps),
+                AverageSleepHours = logs.Any(l => l.SleepHours > 0) 
+                    ? Math.Round(logs.Where(l => l.SleepHours > 0).Average(l => l.SleepHours), 1) 
+                    : 0,
+                SleepAnalysis = logs.Where(l => l.SleepHours > 0 || !string.IsNullOrEmpty(l.SleepStartTime))
+                    .Select(l => new SleepDataDto {
+                        Date = l.Date,
+                        StartTime = l.SleepStartTime,
+                        Duration = l.SleepHours,
+                        MoodId = l.BaseMoodId
+                    }).ToList(),
+                MusicSummary = logs.Where(l => !string.IsNullOrEmpty(l.MusicRecord))
+                    .Select(l => l.MusicRecord!)
+                    .ToList()
             };
+
+            // Calculate Average Sleep Start Time
+            var sleepStartTimes = logs.Where(l => !string.IsNullOrEmpty(l.SleepStartTime)).ToList();
+            if (sleepStartTimes.Any())
+            {
+                // Note: This is a simple average, might not handle "around midnight" perfectly (e.g., 23:00 and 01:00)
+                // but for basic stats it's often acceptable. For better accuracy, specialized circular mean would be needed.
+                double totalMinutes = 0;
+                foreach (var log in sleepStartTimes)
+                {
+                    if (TimeSpan.TryParse(log.SleepStartTime, out var ts))
+                    {
+                        totalMinutes += ts.TotalMinutes;
+                    }
+                }
+                var avgMinutes = totalMinutes / sleepStartTimes.Count;
+                var avgTime = TimeSpan.FromMinutes(avgMinutes);
+                result.AverageSleepStartTime = avgTime.ToString(@"hh\:mm"); 
+            }
 
             // 6. Lưu vào Cache
             await _cacheService.SetAsync(cacheKey, result, _cacheTtl);

@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaryApp.Domain", "DiaryApp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaryApp.Infrastructure", "DiaryApp.Infrastructure\DiaryApp.Infrastructure.csproj", "{96B0E7AC-2C28-4330-994D-ED82C794C283}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaryApp.Tests", "DiaryApp.Tests\DiaryApp.Tests.csproj", "{7E007122-3240-4E9B-9129-49B75BC8F405}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,9 +36,5 @@ Global
 		{96B0E7AC-2C28-4330-994D-ED82C794C283}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96B0E7AC-2C28-4330-994D-ED82C794C283}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96B0E7AC-2C28-4330-994D-ED82C794C283}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7E007122-3240-4E9B-9129-49B75BC8F405}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7E007122-3240-4E9B-9129-49B75BC8F405}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7E007122-3240-4E9B-9129-49B75BC8F405}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7E007122-3240-4E9B-9129-49B75BC8F405}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

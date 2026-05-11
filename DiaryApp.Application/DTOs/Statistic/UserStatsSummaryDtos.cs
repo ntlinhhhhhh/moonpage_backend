@@ -15,4 +15,19 @@ public class UserStatsSummaryDto
     
     // Top activity
     public List<ActivityInfluenceDto> BestActivities { get; set; } = new();
+
+    // New stats
+    public int TotalSteps { get; set; }
+    public double AverageSleepHours { get; set; }
+    public string? AverageSleepStartTime { get; set; }
+    public List<SleepDataDto> SleepAnalysis { get; set; } = new();
+    public List<string> MusicSummary { get; set; } = new();
+}
+
+public class SleepDataDto
+{
+    public string Date { get; set; } = string.Empty;
+    public string? StartTime { get; set; }
+    public double Duration { get; set; }
+    public int? MoodId { get; set; }
 }

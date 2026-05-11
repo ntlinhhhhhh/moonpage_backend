@@ -68,6 +68,18 @@ public class StatisticsRepository : IStatisticsRepository
             if (data.TryGetValue("ActivityIds", out var actObj) && actObj is List<object> actList)
                 log.ActivityIds = actList.Select(x => x?.ToString() ?? "").ToList();
 
+            if (data.TryGetValue("SleepHours", out var sleepObj) && sleepObj != null)
+                log.SleepHours = Convert.ToDouble(sleepObj);
+
+            if (data.TryGetValue("SleepStartTime", out var sleepStartObj) && sleepStartObj != null)
+                log.SleepStartTime = sleepStartObj.ToString();
+
+            if (data.TryGetValue("Steps", out var stepsObj) && stepsObj != null)
+                log.Steps = Convert.ToInt32(stepsObj);
+
+            if (data.TryGetValue("MusicRecord", out var musicObj) && musicObj != null)
+                log.MusicRecord = musicObj.ToString();
+
             logs.Add(log);
         }
 

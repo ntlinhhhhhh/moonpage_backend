@@ -9,6 +9,7 @@ public class DailyLog
     public string UserId { get; set; } = null!;
     public int? BaseMoodId { get; set; }
     public double SleepHours { get; set; } = 0;
+    public string? SleepStartTime { get; set; } // HH:mm
     public bool IsMenstruation { get; set; } = false;
     public string? MenstruationPhase { get; set; } // detail of menstruation
     public int Steps { get; set; } = 0;

@@ -8,6 +8,7 @@ public class DailyLogRequestDto
     public string Date { get; set; } = null!;
     public string? Note { get; set; }
     public double SleepHours { get; set; }
+    public string? SleepStartTime { get; set; }
     public bool IsMenstruation { get; set; }
     public string? MenstruationPhase { get; set; }
     public int? Steps { get; set; }
