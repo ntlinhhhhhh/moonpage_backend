@@ -12,9 +12,9 @@ namespace DiaryApp.API.Controllers;
 public class UserController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
-    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")!;
 
-    // GET: api/users
+    [HttpGet("profile")]
     [Authorize(Roles = "Admin")]
     [HttpGet("")]
     public async Task<IActionResult> GetAllUsers()

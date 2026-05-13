@@ -2,5 +2,5 @@ namespace DiaryApp.Application.Interfaces;
 
 public interface IFirebaseNotificationService
 {
-    Task<string> SendPushNotificationAsync(string deviceToken, string title, string body);
+    Task<string> SendPushNotificationAsync(string deviceToken, string title, string body, string? imageUrl = null);
 }

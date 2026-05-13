@@ -11,7 +11,7 @@ namespace DiaryApp.API.Controllers;
 public class StatisticsController(IStatisticsService statisticsService) : ControllerBase 
 {
     private string CurrentUserId => User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                                 ?? User.FindFirst("id")?.Value 
+                                 ?? User.FindFirst("sub")?.Value
                                  ?? "";
 
     [HttpGet("summary")]

@@ -366,7 +366,6 @@ PUT /api/users/me
 ### Request body (application/json):
 
 - name (string, Required)
-- avatarUrl (string, Optional)
 - gender (string, Optional)
 - birthday (string, Optional): YYYY-MM-DD format.
 
@@ -413,6 +412,27 @@ PUT /api/users/me/avatar
 }
 ```
 
+## Delete my account
+
+- Endpoint:
+
+```text
+DELETE /api/users/me
+```
+
+- Description: Deletes the authenticated user's account.
+- Auth required: Yes
+
+### Responses:
+
+- [200 OK] - Account deleted successfully.
+
+```json
+{
+  "message": "Your account has been deleted successfully."
+}
+```
+
 ## Search users
 
 - Endpoint:
@@ -427,7 +447,7 @@ GET /api/users/search
 ### Query parameters:
 
 - name (string, Required): The search keyword.
-- limit (int, Optional): Max results to return.
+- limit (int, Required): Max results to return.
 
 ### Responses:
 
@@ -608,13 +628,17 @@ GET /api/dailylogs/date/:date
   "id": "log_id",
   "baseMoodId": 4,
   "date": "2024-04-20",
+  "yearMonth": "2024-04",
   "note": "Great day!",
   "sleepHours": 8.0,
   "isMenstruation": false,
+  "menstruationPhase": null,
   "steps": 10000,
+  "musicRecord": "Classical",
   "dailyPhotos": ["https://storage.../image1.jpg"],
   "activityIds": ["act_sport", "act_reading"],
-  "createdAt": "2024-04-20T10:00:00Z"
+  "createdAt": "2024-04-20T10:00:00Z",
+  "updatedAt": "2024-04-20T10:05:00Z"
 }
 ```
 
@@ -639,7 +663,17 @@ GET /api/dailylogs/month/:yearMonth
     "id": "log_id_1",
     "baseMoodId": 4,
     "date": "2024-04-20",
-    "note": "..."
+    "yearMonth": "2024-04",
+    "note": "...",
+    "sleepHours": 7.5,
+    "isMenstruation": false,
+    "menstruationPhase": "",
+    "steps": 8000,
+    "musicRecord": "",
+    "dailyPhotos": [],
+    "activityIds": [],
+    "createdAt": "...",
+    "updatedAt": "..."
   }
 ]
 ```
@@ -751,9 +785,10 @@ POST /api/moments
 ### Request body (multipart/form-data):
 
 - ImageFile (File, Required): The photo to share.
+- DailyLogId (string, Optional): Associated daily log ID.
 - Caption (string, Optional).
 - IsPublic (bool, Optional).
-- DailyLogId (string, Optional): Associated daily log ID.
+- CapturedAt (DateTime, Optional): Default is current UTC.
 
 ### Responses:
 
@@ -764,6 +799,7 @@ POST /api/moments
   "id": "moment_id",
   "userId": "user_id",
   "userName": "Nguyen Van A",
+  "userAvatarUrl": "https://...",
   "imageUrl": "https://...",
   "caption": "A nice view!",
   "isPublic": true,
@@ -829,21 +865,21 @@ DELETE /api/moments/:id
 
 ### Responses:
 
-- [200 OK] - Moment deleted successfully.
+- [204 No Content] - Success.
 
 ---
 
 # Notification Endpoints:
 
-## Send push notification (Dev Only)
+## Send push notification (Dev/Admin Only)
 
 - Endpoint:
 
 ```text
-POST /api/notifications/send
+POST /api/notifications/push
 ```
 
-- Description: Sends a test push notification using FCM token.
+- Description: Sends a push notification using FCM token.
 - Auth required: Yes
 
 ### Request body (application/json):
@@ -851,17 +887,34 @@ POST /api/notifications/send
 - token (string, Required): Device FCM token.
 - title (string, Required).
 - body (string, Required).
+- imageUrl (string, Optional): Large image URL for the notification.
+
+```json
+{
+  "token": "fcm_token_here",
+  "title": "Hello!",
+  "body": "This is a test notification.",
+  "imageUrl": "https://example.com/img.png"
+}
+```
 
 ### Responses:
 
 - [200 OK] - Notification sent.
 
-## Create app notification
+```json
+{
+  "success": true,
+  "messageId": "..."
+}
+```
+
+## Create in-app notification
 
 - Endpoint:
 
 ```text
-POST /api/notifications
+POST /api/notifications/in-app
 ```
 
 - Description: Creates a new in-app notification record.
@@ -872,18 +925,41 @@ POST /api/notifications
 - userId (string, Required)
 - title (string, Required)
 - message (string, Required)
-- type (string, Optional)
+- type (string, Optional): Default is "System".
+
+```json
+{
+  "userId": "target_user_id",
+  "title": "Welcome!",
+  "message": "Thanks for joining us.",
+  "type": "System"
+}
+```
 
 ### Responses:
 
 - [201 Created] - Notification created.
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "...",
+    "title": "...",
+    "message": "...",
+    "type": "...",
+    "isRead": false,
+    "createdAt": "..."
+  }
+}
+```
 
 ## Get my notifications
 
 - Endpoint:
 
 ```text
-GET /api/notifications
+GET /api/notifications/me
 ```
 
 - Description: Retrieves a list of in-app notifications for the authenticated user.
@@ -892,6 +968,22 @@ GET /api/notifications
 ### Responses:
 
 - [200 OK] - List of notifications.
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "...",
+      "title": "...",
+      "message": "...",
+      "type": "...",
+      "isRead": false,
+      "createdAt": "..."
+    }
+  ]
+}
+```
 
 ## Mark notification as read
 
@@ -938,11 +1030,18 @@ DELETE /api/notifications/all
 
 - [200 OK] - All notifications deleted.
 
+```json
+{
+  "success": true,
+  "message": "All your notifications have been cleared!"
+}
+```
+
 ---
 
 # Statistics Endpoints:
 
-## Get statistics summary
+## Get user statistics summary
 
 - Endpoint:
 
@@ -955,7 +1054,7 @@ GET /api/statistics/summary
 
 ### Query parameters:
 
-- year (int, Optional): Year for statistics.
+- year (int, Optional): Year for statistics. Defaults to current year.
 - month (int, Optional): Month for statistics.
 
 ### Responses:
@@ -969,12 +1068,12 @@ GET /api/statistics/summary
   "currentStreak": 5,
   "longestStreak": 10,
   "moodDistribution": [
-    { "label": "Happy", "count": 20, "percentage": 44.4 }
+    { "baseMoodId": 5, "count": 20, "percentage": 44.4 }
   ],
   "moodFlow": [
     { "date": "2024-04-20", "moodId": 4 }
   ],
-  "bestActivities": [
+  "influenceActivities": [
     { "activityId": "act_1", "activityName": "Reading", "averageMoodScore": 4.8, "occurrence": 5 }
   ]
 }
@@ -992,7 +1091,7 @@ GET /api/statistics/summary
 GET /api/activities
 ```
 
-- Description: Lists all available activities.
+- Description: Lists all available activities, ordered by Name.
 - Auth required: Yes
 
 ### Responses:
@@ -1147,6 +1246,7 @@ POST /api/themes
 - price (int, Required)
 - thumbnailUrl (string, Optional)
 - backgroundUrl (string, Optional)
+- isActive (bool, Optional): Default is true.
 - moods (array, Required): List of mood icons.
 
 ```json

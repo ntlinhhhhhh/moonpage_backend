@@ -26,7 +26,7 @@ public class MomentController(
     private readonly IMessageProducer _messageProducer = messageProducer;
     private readonly ILogger<MomentController> _logger = logger;
 
-    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")!;
 
     // POST: api/moments
     [HttpPost]

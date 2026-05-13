@@ -84,7 +84,7 @@
       ]
     },
     {
-      "collectionGroup": "appNotifications", 
+      "collectionGroup": "notifications", 
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "UserId", "order": "ASCENDING" },

@@ -13,7 +13,7 @@ public class DailyLogController(IDailyLogService logService) : ControllerBase
 {
     private readonly IDailyLogService _logService = logService;
 
-    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")!;
 
     // POST: api/dailylogs
     [HttpPost]

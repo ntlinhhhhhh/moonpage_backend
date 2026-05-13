@@ -1,10 +1,9 @@
 using DiaryApp.Application.Interfaces;
 using DiaryApp.Domain.Entities;
 using DiaryApp.Infrastructure.Data;
-using FirebaseAdmin.Messaging;
 using Google.Cloud.Firestore;
-using Org.BouncyCastle.Pqc.Crypto.Saber;
 
+namespace DiaryApp.Infrastructure.Repositories;
 
 public class AppNotificationRepository : IAppNotificationRepository
 {
@@ -20,24 +19,25 @@ public class AppNotificationRepository : IAppNotificationRepository
     async Task IAppNotificationRepository.CreateAsync(AppNotification notification)
     {
         DocumentReference docRef = _notificationCollection.Document(notification.Id);
-        var notificationData = MapMomentToDictionary(notification);
+        var notificationData = MapNotificationToDictionary(notification);
         await docRef.SetAsync(notificationData);
     }
 
     async Task<IEnumerable<AppNotification>> IAppNotificationRepository.GetByUserIdAsync(string userId)
     {
-        Query query = _db.Collection("Notifications")
-                       .WhereEqualTo("userId", userId)
-                       .OrderByDescending("createdAt");
+        Query query = _notificationCollection
+                       .WhereEqualTo("UserId", userId)
+                       .OrderByDescending("CreatedAt");
 
         QuerySnapshot snapshot = await query.GetSnapshotAsync();
-        return  snapshot.Documents.Select(MapSnapshotToAppNotification);
+        return snapshot.Documents.Select(MapSnapshotToAppNotification);
     }
 
     async Task<AppNotification> IAppNotificationRepository.GetByIdAsync(string id)
     {
         DocumentReference docRef = _notificationCollection.Document(id);
         DocumentSnapshot snapshot = await docRef.GetSnapshotAsync();
+        if (!snapshot.Exists) return null;
         return MapSnapshotToAppNotification(snapshot);
     }
 
@@ -45,7 +45,7 @@ public class AppNotificationRepository : IAppNotificationRepository
     async Task IAppNotificationRepository.MarkAsReadAsync(string notificationId)
     {
         DocumentReference docRef = _notificationCollection.Document(notificationId);
-        await docRef.UpdateAsync("isRead", true);
+        await docRef.UpdateAsync("IsRead", true);
     }
 
     async Task IAppNotificationRepository.DeleteByIdAsync(string notificationId)
@@ -55,7 +55,7 @@ public class AppNotificationRepository : IAppNotificationRepository
 
     async Task IAppNotificationRepository.DeleteAllByUserIdAsync(string userId)
     {
-        Query query = _notificationCollection.WhereEqualTo("userId", userId);
+        Query query = _notificationCollection.WhereEqualTo("UserId", userId);
         QuerySnapshot snapshot = await query.GetSnapshotAsync();
 
         if (snapshot.Documents.Count == 0) return;
@@ -67,14 +67,14 @@ public class AppNotificationRepository : IAppNotificationRepository
             batch.Delete(doc.Reference);
         }
 
-        await batch.CommitAsync(); 
+        await batch.CommitAsync();
     }
 
-        private Dictionary<string, object> MapMomentToDictionary(AppNotification notification)
+    private Dictionary<string, object> MapNotificationToDictionary(AppNotification notification)
     {
         return new Dictionary<string, object>
         {
-            { "id", notification.Id },
+            { "Id", notification.Id },
             { "UserId",  notification.UserId},
             { "Title", notification.Title },
             { "Message", notification.Message },
@@ -86,15 +86,17 @@ public class AppNotificationRepository : IAppNotificationRepository
 
     private AppNotification MapSnapshotToAppNotification(DocumentSnapshot snapshot)
     {
+        if (!snapshot.Exists) return null;
+
         return new AppNotification
         {
-            Id = snapshot.GetValue<string>("id"),
-            UserId = snapshot.GetValue<string>("userId"),
-            Title = snapshot.GetValue<string>("title"),
-            Message = snapshot.GetValue<string>("message"),
-            Type = snapshot.GetValue<string>("type"),
-            IsRead = snapshot.GetValue<bool>("isRead"),
-            CreatedAt = snapshot.GetValue<Timestamp>("createdAt").ToDateTime()
+            Id = snapshot.Id,
+            UserId = snapshot.ContainsField("UserId") ? snapshot.GetValue<string>("UserId") : string.Empty,
+            Title = snapshot.ContainsField("Title") ? snapshot.GetValue<string>("Title") : string.Empty,
+            Message = snapshot.ContainsField("Message") ? snapshot.GetValue<string>("Message") : string.Empty,
+            Type = snapshot.ContainsField("Type") ? snapshot.GetValue<string>("Type") : "System",
+            IsRead = snapshot.ContainsField("IsRead") ? snapshot.GetValue<bool>("IsRead") : false,
+            CreatedAt = snapshot.ContainsField("CreatedAt") ? snapshot.GetValue<Timestamp>("CreatedAt").ToDateTime() : DateTime.UtcNow
         };
     }
 }

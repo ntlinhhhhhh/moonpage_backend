@@ -5,7 +5,7 @@ namespace DiaryApp.Infrastructure.Services;
 
 public class FirebaseNotificationService : IFirebaseNotificationService
 {
-    public async Task<string> SendPushNotificationAsync(string deviceToken, string title, string body)
+    public async Task<string> SendPushNotificationAsync(string deviceToken, string title, string body, string? imageUrl = null)
     {
         var message = new Message
         {
@@ -13,7 +13,8 @@ public class FirebaseNotificationService : IFirebaseNotificationService
             Notification = new Notification
             {
                 Title = title,
-                Body = body
+                Body = body,
+                ImageUrl = imageUrl
             }
         };
 

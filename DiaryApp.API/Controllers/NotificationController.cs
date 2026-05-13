@@ -16,10 +16,10 @@ public class NotificationController(
 {
     private readonly IFirebaseNotificationService _firebaseService = firebaseNotificationService;
     private readonly IAppNotificationService _appNotificationService = appNotificationService;
-    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")!;
 
 
-    [HttpPost("send")]
+    [HttpPost("push")]
     public async Task<IActionResult> SendPushNotification([FromBody] PushNotificationRequestDto request)
     {
         try
@@ -27,7 +27,8 @@ public class NotificationController(
             var messageId = await _firebaseService.SendPushNotificationAsync(
                 request.Token, 
                 request.Title, 
-                request.Body);
+                request.Body,
+                request.ImageUrl);
                 
             return Ok(new { Success = true, MessageId = messageId });
         }
@@ -37,7 +38,7 @@ public class NotificationController(
         }
     }
 
-    [HttpPost]
+    [HttpPost("in-app")]
     public async Task<IActionResult> CreateNotification([FromBody] AppNotificationRequestDto request)
     {
         try
@@ -51,7 +52,7 @@ public class NotificationController(
         }
     }
 
-    [HttpGet]
+    [HttpGet("me")]
     public async Task<IActionResult> GetMyNotifications()
     {
         var userId = CurrentUserId;
