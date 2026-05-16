@@ -115,6 +115,7 @@ public class DailyLogRepository : IDailyLogRepository
             { "YearMonth", log.YearMonth },
             { "Note", log.Note ?? "" },
             { "SleepHours", log.SleepHours },
+            { "SleepStartTime", log.SleepStartTime ?? "" },
             { "IsMenstruation", log.IsMenstruation },
             { "MenstruationPhase", log.MenstruationPhase ?? "" },
             { "Steps", log.Steps },
@@ -131,7 +132,7 @@ public class DailyLogRepository : IDailyLogRepository
         var log = new DailyLog
         {
             Id = snapshot.Id,
-            BaseMoodId = snapshot.GetValue<int>("BaseMoodId"),
+            BaseMoodId = snapshot.ContainsField("BaseMoodId") ? snapshot.GetValue<int?>("BaseMoodId") : null,
             Date = snapshot.GetValue<string>("Date"),
             YearMonth = snapshot.GetValue<string>("YearMonth"),
             Note = snapshot.ContainsField("Note") ? snapshot.GetValue<string>("Note") : null,
@@ -140,6 +141,7 @@ public class DailyLogRepository : IDailyLogRepository
             Steps = snapshot.ContainsField("Steps") ? snapshot.GetValue<int>("Steps") : 0,
             MusicRecord = snapshot.ContainsField("MusicRecord") ? snapshot.GetValue<string>("MusicRecord") : null,
             SleepHours = snapshot.GetValue<double>("SleepHours"),
+            SleepStartTime = snapshot.ContainsField("SleepStartTime") ? snapshot.GetValue<string>("SleepStartTime") : null,
             CreatedAt = snapshot.GetValue<DateTime>("CreatedAt"),
             UpdatedAt = snapshot.GetValue<DateTime>("UpdatedAt"),
             DailyPhotos = snapshot.ContainsField("DailyPhotos") 
