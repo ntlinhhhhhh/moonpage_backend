@@ -591,9 +591,13 @@ POST /api/dailylogs
 - BaseMoodId (int, Optional): 1 (Very Sad) to 5 (Very Happy).
 - Note (string, Optional).
 - SleepHours (double, Optional).
+- SleepStartTime (string, Optional): HH:mm format (e.g., "22:30").
+- WakeupTime (string, Optional): HH:mm format (e.g., "06:30").
 - IsMenstruation (bool, Optional).
 - MenstruationPhase (string, Optional).
 - Steps (int, Optional).
+- Calories (int, Optional).
+- Distance (double, Optional).
 - MusicRecord (string, Optional).
 - DailyPhotos (Files, Optional): Multiple image files.
 - ActivityIds (strings, Optional): List of activity IDs.
@@ -631,14 +635,16 @@ GET /api/dailylogs/date/:date
   "yearMonth": "2024-04",
   "note": "Great day!",
   "sleepHours": 8.0,
+  "sleepStartTime": "22:00",
   "isMenstruation": false,
   "menstruationPhase": null,
   "steps": 10000,
+  "calories": 500,
+  "distance": 5.5,
   "musicRecord": "Classical",
   "dailyPhotos": ["https://storage.../image1.jpg"],
   "activityIds": ["act_sport", "act_reading"],
-  "createdAt": "2024-04-20T10:00:00Z",
-  "updatedAt": "2024-04-20T10:05:00Z"
+  "createdAt": "2024-04-20T10:00:00Z"
 }
 ```
 
@@ -666,14 +672,14 @@ GET /api/dailylogs/month/:yearMonth
     "yearMonth": "2024-04",
     "note": "...",
     "sleepHours": 7.5,
+    "sleepStartTime": "23:00",
     "isMenstruation": false,
     "menstruationPhase": "",
     "steps": 8000,
     "musicRecord": "",
     "dailyPhotos": [],
     "activityIds": [],
-    "createdAt": "...",
-    "updatedAt": "..."
+    "createdAt": "..."
   }
 ]
 ```
@@ -1067,6 +1073,12 @@ GET /api/statistics/summary
   "totalPhotos": 12,
   "currentStreak": 5,
   "longestStreak": 10,
+  "totalSteps": 50000,
+  "averageSteps": 5000,
+  "totalCalories": 2500,
+  "averageCalories": 250,
+  "totalDistance": 35.5,
+  "averageDistance": 3.55,
   "moodDistribution": [
     { "baseMoodId": 5, "count": 20, "percentage": 44.4 }
   ],
@@ -1075,7 +1087,20 @@ GET /api/statistics/summary
   ],
   "influenceActivities": [
     { "activityId": "act_1", "activityName": "Reading", "averageMoodScore": 4.8, "occurrence": 5 }
-  ]
+  ],
+  "averageSleepHours": 7.5,
+  "averageSleepStartTime": "23:00",
+  "averageWakeupTime": "06:30",
+  "sleepAnalysis": [
+    {
+      "date": "2024-04-20",
+      "sleepStartTime": "23:00",
+      "wakeupTime": "06:30",
+      "duration": 7.5,
+      "moodId": 4
+    }
+  ],
+  "musicSummary": ["Classical", "Lo-fi"]
 }
 ```
 

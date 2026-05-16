@@ -98,13 +98,19 @@ public class StatisticsService(
 
                 // New stats calculation
                 TotalSteps = logs.Sum(l => l.Steps),
+                AverageSteps = logs.Any() ? (int)logs.Average(l => l.Steps) : 0,
+                TotalCalories = logs.Sum(l => l.Calories),
+                AverageCalories = logs.Any() ? (int)logs.Average(l => l.Calories) : 0,
+                TotalDistance = Math.Round(logs.Sum(l => l.Distance), 2),
+                AverageDistance = logs.Any() ? Math.Round(logs.Average(l => l.Distance), 2) : 0,
                 AverageSleepHours = logs.Any(l => l.SleepHours > 0) 
                     ? Math.Round(logs.Where(l => l.SleepHours > 0).Average(l => l.SleepHours), 1) 
                     : 0,
-                SleepAnalysis = logs.Where(l => l.SleepHours > 0 || !string.IsNullOrEmpty(l.SleepStartTime))
+                SleepAnalysis = logs.Where(l => l.SleepHours > 0 || !string.IsNullOrEmpty(l.SleepStartTime) || !string.IsNullOrEmpty(l.WakeupTime))
                     .Select(l => new SleepDataDto {
                         Date = l.Date,
-                        StartTime = l.SleepStartTime,
+                        SleepStartTime = l.SleepStartTime,
+                        WakeupTime = l.WakeupTime,
                         Duration = l.SleepHours,
                         MoodId = l.BaseMoodId
                     }).ToList(),
@@ -130,6 +136,23 @@ public class StatisticsService(
                 var avgMinutes = totalMinutes / sleepStartTimes.Count;
                 var avgTime = TimeSpan.FromMinutes(avgMinutes);
                 result.AverageSleepStartTime = avgTime.ToString(@"hh\:mm"); 
+            }
+
+            // Calculate Average Wakeup Time
+            var wakeupTimes = logs.Where(l => !string.IsNullOrEmpty(l.WakeupTime)).ToList();
+            if (wakeupTimes.Any())
+            {
+                double totalMinutes = 0;
+                foreach (var log in wakeupTimes)
+                {
+                    if (TimeSpan.TryParse(log.WakeupTime, out var ts))
+                    {
+                        totalMinutes += ts.TotalMinutes;
+                    }
+                }
+                var avgMinutes = totalMinutes / wakeupTimes.Count;
+                var avgTime = TimeSpan.FromMinutes(avgMinutes);
+                result.AverageWakeupTime = avgTime.ToString(@"hh\:mm");
             }
 
             // 6. Lưu vào Cache

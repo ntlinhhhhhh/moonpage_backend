@@ -18,8 +18,14 @@ public class UserStatsSummaryDto
 
     // New stats
     public int TotalSteps { get; set; }
+    public int AverageSteps { get; set; }
+    public int TotalCalories { get; set; }
+    public int AverageCalories { get; set; }
+    public double TotalDistance { get; set; }
+    public double AverageDistance { get; set; }
     public double AverageSleepHours { get; set; }
     public string? AverageSleepStartTime { get; set; }
+    public string? AverageWakeupTime { get; set; }
     public List<SleepDataDto> SleepAnalysis { get; set; } = new();
     public List<string> MusicSummary { get; set; } = new();
 }
@@ -27,7 +33,8 @@ public class UserStatsSummaryDto
 public class SleepDataDto
 {
     public string Date { get; set; } = string.Empty;
-    public string? StartTime { get; set; }
+    public string? SleepStartTime { get; set; }
+    public string? WakeupTime { get; set; }
     public double Duration { get; set; }
     public int? MoodId { get; set; }
 }

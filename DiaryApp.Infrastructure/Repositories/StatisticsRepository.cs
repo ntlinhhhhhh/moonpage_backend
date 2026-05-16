@@ -74,8 +74,17 @@ public class StatisticsRepository : IStatisticsRepository
             if (data.TryGetValue("SleepStartTime", out var sleepStartObj) && sleepStartObj != null)
                 log.SleepStartTime = sleepStartObj.ToString();
 
+            if (data.TryGetValue("WakeupTime", out var wakeupObj) && wakeupObj != null)
+                log.WakeupTime = wakeupObj.ToString();
+
             if (data.TryGetValue("Steps", out var stepsObj) && stepsObj != null)
                 log.Steps = Convert.ToInt32(stepsObj);
+
+            if (data.TryGetValue("Calories", out var caloriesObj) && caloriesObj != null)
+                log.Calories = Convert.ToInt32(caloriesObj);
+
+            if (data.TryGetValue("Distance", out var distanceObj) && distanceObj != null)
+                log.Distance = Convert.ToDouble(distanceObj);
 
             if (data.TryGetValue("MusicRecord", out var musicObj) && musicObj != null)
                 log.MusicRecord = musicObj.ToString();

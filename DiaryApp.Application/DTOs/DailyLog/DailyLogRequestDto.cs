@@ -9,9 +9,12 @@ public class DailyLogRequestDto
     public string? Note { get; set; }
     public double SleepHours { get; set; }
     public string? SleepStartTime { get; set; }
+    public string? WakeupTime { get; set; }
     public bool IsMenstruation { get; set; }
     public string? MenstruationPhase { get; set; }
     public int? Steps { get; set; }
+    public int? Calories { get; set; }
+    public double? Distance { get; set; }
     public string? MusicRecord { get; set; }
     public List<IFormFile> DailyPhotos { get; set; } = new();
     public List<string> ActivityIds { get; set; } = new();
