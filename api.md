@@ -433,6 +433,79 @@ DELETE /api/users/me
 }
 ```
 
+## Change password
+
+- Endpoint:
+
+```text
+POST /api/users/me/change-password
+```
+
+- Description: Changes the authenticated user's password. Only applicable for local accounts.
+- Auth required: Yes
+
+### Request body (application/json):
+
+- oldPassword (string, Required)
+- newPassword (string, Required)
+
+```json
+{
+  "oldPassword": "currentPassword123",
+  "newPassword": "newSecurePassword456"
+}
+```
+
+### Responses:
+
+- [200 OK] - Password changed successfully.
+
+```json
+{
+  "message": "Your password has been changed successfully!"
+}
+```
+
+## Confirm password/account
+
+- Endpoint:
+
+```text
+POST /api/users/me/confirm-password
+```
+
+- Description: Confirms identity before sensitive actions (e.g., deletion). Supports both local (password) and Google (ID token) accounts.
+- Auth required: Yes
+
+### Request body (application/json):
+
+- password (string, Optional): Required for local accounts.
+- googleIdToken (string, Optional): Required for Google accounts.
+
+```json
+{
+  "password": "currentPassword123"
+}
+```
+
+OR
+
+```json
+{
+  "googleIdToken": "google_jwt_token_here"
+}
+```
+
+### Responses:
+
+- [200 OK] - Account confirmed.
+
+```json
+{
+  "message": "Account confirmed."
+}
+```
+
 ## Search users
 
 - Endpoint:

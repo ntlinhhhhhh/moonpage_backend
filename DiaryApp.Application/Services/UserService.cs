@@ -13,7 +13,8 @@ public class UserService(
     IUserStreakRepository userStreakRepository,
     IRedisCacheService cacheService,
     IMessageProducer messageProducer,
-    IGoogleStorageService googleStorageService
+    IGoogleStorageService googleStorageService,
+    IGoogleAuthProvider googleAuthProvider
     ) : IUserService
 {
     private readonly IUserRepository _userRepository = userRepository;
@@ -22,6 +23,7 @@ public class UserService(
     private readonly IRedisCacheService _cacheService = cacheService;
     private readonly IMessageProducer _messageProducer = messageProducer;
     private readonly IGoogleStorageService _googleStorageService = googleStorageService;
+    private readonly IGoogleAuthProvider _googleAuthProvider = googleAuthProvider;
     
     public async Task<UserProfileDto> GetProfileAsync(string userId)
     {
@@ -270,6 +272,58 @@ public class UserService(
             $"owned_themes:{userId}"
         };
         await Task.WhenAll(keysToRemove.Select(key => _cacheService.RemoveAsync(key)));
+    }
+
+    public async Task ChangePasswordAsync(string userId, ChangePasswordRequestDto request)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null) throw new KeyNotFoundException("User not found.");
+
+        if (user.AuthProvider != "Local")
+        {
+            throw new InvalidOperationException("This account is linked with Google. Password cannot be changed manually.");
+        }
+
+        bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.OldPassword, user.HashPassword);
+        if (!isPasswordValid)
+        {
+            throw new UnauthorizedAccessException("The old password you entered is incorrect.");
+        }
+
+        await _userRepository.UpdateProfileAsync(
+            userId: userId,
+            name: user.Name,
+            newPassword: request.NewPassword,
+            avatarUrl: user.AvatarUrl,
+            gender: user.Gender,
+            birthday: user.Birthday
+        );
+
+        await _cacheService.RemoveAsync($"auth:email:{user.Email}");
+    }
+
+    public async Task<bool> ConfirmPasswordAsync(string userId, ConfirmPasswordRequestDto request)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null) throw new KeyNotFoundException("User not found.");
+
+        if (user.AuthProvider != "Local")
+        {
+            if (string.IsNullOrEmpty(request.GoogleIdToken))
+            {
+                throw new ArgumentException("Google ID token is required to confirm this account.");
+            }
+
+            var payload = await _googleAuthProvider.ValidateTokenAsync(request.GoogleIdToken);
+            return payload.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (string.IsNullOrEmpty(request.Password))
+        {
+            throw new ArgumentException("Password is required to confirm this account.");
+        }
+
+        return BCrypt.Net.BCrypt.Verify(request.Password, user.HashPassword);
     }
 
     public async Task<IEnumerable<UserSearchResponseDto>> GetAllUsersAsync()

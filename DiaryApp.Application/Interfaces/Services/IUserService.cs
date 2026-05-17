@@ -15,5 +15,6 @@ public interface IUserService
     Task<(bool IsSuccess, string Message)> BuyStreakFreezeAsync(string userId);
     Task<IEnumerable<UserSearchResponseDto>> GetAllUsersAsync();
     Task DeleteUserAsync(string userId);
-
+    Task ChangePasswordAsync(string userId, ChangePasswordRequestDto request);
+    Task<bool> ConfirmPasswordAsync(string userId, ConfirmPasswordRequestDto request);
 }

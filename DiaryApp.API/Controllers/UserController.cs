@@ -107,6 +107,42 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
+    [HttpPost("me/change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)
+    {
+        try
+        {
+            await _userService.ChangePasswordAsync(CurrentUserId, request);
+            return Ok(new { message = "Your password has been changed successfully!" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("me/confirm-password")]
+    public async Task<IActionResult> ConfirmPassword([FromBody] ConfirmPasswordRequestDto request)
+    {
+        try
+        {
+            var isValid = await _userService.ConfirmPasswordAsync(CurrentUserId, request);
+            if (!isValid)
+            {
+                return Unauthorized(new { message = "The password or Google token you entered is incorrect." });
+            }
+            return Ok(new { message = "Account confirmed." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPut("me/avatar")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UpdateAvatar([FromForm] UploadAvatarRequestDto request)
