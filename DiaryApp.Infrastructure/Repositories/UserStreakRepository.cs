@@ -42,6 +42,7 @@ public class UserStreakRepository : IUserStreakRepository
             { "UserId", streak.UserId },
             { "CurrentStreak", streak.CurrentStreak },
             { "LongestStreak", streak.LongestStreak },
+            { "RecoverableStreak", streak.RecoverableStreak },
             { "StreakFreezes", streak.StreakFreezes },
             { "UpdatedAt", Timestamp.FromDateTime(streak.UpdatedAt.ToUniversalTime()) }
         };
@@ -61,6 +62,7 @@ public class UserStreakRepository : IUserStreakRepository
             UserId = snapshot.Id,
             CurrentStreak = snapshot.ContainsField("CurrentStreak") ? snapshot.GetValue<int>("CurrentStreak") : 0,
             LongestStreak = snapshot.ContainsField("LongestStreak") ? snapshot.GetValue<int>("LongestStreak") : 0,
+            RecoverableStreak = snapshot.ContainsField("RecoverableStreak") ? snapshot.GetValue<int>("RecoverableStreak") : 0,
             StreakFreezes = snapshot.ContainsField("StreakFreezes") ? snapshot.GetValue<int>("StreakFreezes") : 0,
             LastLogDate = snapshot.ContainsField("LastLogDate") ? snapshot.GetValue<DateTime>("LastLogDate") : null,
             UpdatedAt = snapshot.ContainsField("UpdatedAt") ? snapshot.GetValue<DateTime>("UpdatedAt") : DateTime.UtcNow

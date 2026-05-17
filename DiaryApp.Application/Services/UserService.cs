@@ -37,6 +37,8 @@ public class UserService(
         {
             throw new KeyNotFoundException("We couldn't find your profile information.");
         }
+
+        var streak = await _userStreakRepository.GetByUserIdAsync(userId);
         
         var profile = new UserProfileDto
         {
@@ -48,6 +50,10 @@ public class UserService(
             Gender = user.Gender,
             Birthday = user.Birthday,
             CoinBalance = user.CoinBalance,
+            CurrentStreak = streak?.CurrentStreak ?? 0,
+            LongestStreak = streak?.LongestStreak ?? 0,
+            StreakFreezes = streak?.StreakFreezes ?? 0,
+            RecoverableStreak = streak?.RecoverableStreak ?? 0,
             AuthProvider = user.AuthProvider,
             ActiveThemeId = user.ActiveThemeId,
             CreatedAt = user.CreatedAt
@@ -222,6 +228,51 @@ public class UserService(
         await _cacheService.RemoveAsync($"user_profile:{userId}");
 
         return (true, "Streak Freeze purchased successfully! Your streak is now protected.");
+    }
+
+    public async Task<(bool IsSuccess, string Message)> RecoverStreakAsync(string userId)
+    {
+        var streak = await _userStreakRepository.GetByUserIdAsync(userId);
+
+        if (streak == null || streak.RecoverableStreak <= 0)
+        {
+            return (false, "There is no streak to recover or your streak is already active.");
+        }
+
+        if (streak.StreakFreezes <= 0)
+        {
+            return (false, "You don't have any Streak Freezes. Please buy one in the store.");
+        }
+
+        // Recover the streak: Old streak + the log they just made (which is why CurrentStreak was 1)
+        // If CurrentStreak was already > 1, it means they might have logged again, but let's assume 
+        // they recover right after it resets to 1.
+        streak.CurrentStreak = streak.RecoverableStreak + (streak.CurrentStreak > 0 ? 0 : 1); 
+        
+        // Actually, logic in Worker sets CurrentStreak to 1 when it resets.
+        // So Recovered Streak should be RecoverableStreak (which was the count before reset)
+        // Wait, if they log today and it resets to 1. The 1 IS the today log.
+        // So Total Streak = Old Streak + 1.
+        streak.CurrentStreak = streak.RecoverableStreak; 
+        // Correction: The Worker already incremented/reset. 
+        // If lastLog was 2 days ago, Worker sets CurrentStreak = 1.
+        // That 1 represents the log of "Today".
+        // So if they had 10 days, missed yesterday, log today -> Worker sets CurrentStreak = 1, Recoverable = 10.
+        // Recovering should make it 11? No, a Freeze "fills the gap".
+        // So it's as if they didn't miss. 10 + 1 = 11.
+        streak.CurrentStreak = streak.RecoverableStreak + 1;
+        
+        if (streak.CurrentStreak > streak.LongestStreak)
+            streak.LongestStreak = streak.CurrentStreak;
+
+        streak.StreakFreezes -= 1;
+        streak.RecoverableStreak = 0;
+        streak.UpdatedAt = DateTime.UtcNow;
+
+        await _userStreakRepository.UpsertAsync(streak);
+        await _cacheService.RemoveAsync($"user_profile:{userId}");
+
+        return (true, $"Streak recovered! Your current streak is now {streak.CurrentStreak} days.");
     }
 
     public async Task ChangeActiveThemeAsync(string userId, UpdateThemeRequestDto request)

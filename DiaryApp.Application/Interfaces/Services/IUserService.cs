@@ -13,6 +13,7 @@ public interface IUserService
     Task ChangeActiveThemeAsync(string userId, UpdateThemeRequestDto request);
     Task<(bool IsSuccess, string Message)> BuyThemeAsync(string userId, BuyThemeRequestDto request);
     Task<(bool IsSuccess, string Message)> BuyStreakFreezeAsync(string userId);
+    Task<(bool IsSuccess, string Message)> RecoverStreakAsync(string userId);
     Task<IEnumerable<UserSearchResponseDto>> GetAllUsersAsync();
     Task DeleteUserAsync(string userId);
     Task ChangePasswordAsync(string userId, ChangePasswordRequestDto request);

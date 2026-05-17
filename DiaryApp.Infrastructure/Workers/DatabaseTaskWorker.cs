@@ -80,20 +80,18 @@ public class DatabaseTaskWorker : BackgroundService
                             if (lastLog == today.AddDays(-1)) 
                             {
                                 streak.CurrentStreak++;
+                                streak.RecoverableStreak = 0; // Reset recovery if streak continues
                             } 
                             else 
                             {
-                                if (streak.StreakFreezes > 0 && lastLog == today.AddDays(-2)) 
+                                // Instead of auto-using freeze, we save the old streak to RecoverableStreak
+                                // and reset CurrentStreak to 1. User can then choose to recover manually.
+                                if (streak.CurrentStreak > 0)
                                 {
-                                    streak.StreakFreezes--;
-                                    streak.CurrentStreak += 1;
-                                    _logger.LogInformation("User {UserId} streak saved using a Streak Freeze!", data.UserId);
-                                } 
-                                else 
-                                {
-                                    streak.CurrentStreak = 1;
-                                    _logger.LogInformation("User {UserId} streak broken. Reset to 1.", data.UserId);
+                                    streak.RecoverableStreak = streak.CurrentStreak;
+                                    _logger.LogInformation("User {UserId} streak broken. Saved {Streak} to RecoverableStreak.", data.UserId, streak.RecoverableStreak);
                                 }
+                                streak.CurrentStreak = 1;
                             }
 
                             if (streak.CurrentStreak > streak.LongestStreak)   

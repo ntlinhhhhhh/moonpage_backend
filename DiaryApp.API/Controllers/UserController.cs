@@ -219,6 +219,26 @@ public class UserController(IUserService userService) : ControllerBase
         });
     }
 
+    // POST: api/users/me/streak/recover
+    [HttpPost("me/streak/recover")]
+    public async Task<IActionResult> RecoverStreak()
+    {
+        var (isSuccess, message) = await _userService.RecoverStreakAsync(CurrentUserId);
+        
+        if (!isSuccess)
+        {
+            return BadRequest(new { 
+                success = false, 
+                message = message 
+            });
+        }
+
+        return Ok(new { 
+            success = true, 
+            message = message 
+        });
+    }
+
     // PUT: api/users/me/themes/active
     [HttpPut("me/themes/active")]
     public async Task<IActionResult> ChangeTheme([FromBody] UpdateThemeRequestDto request)
