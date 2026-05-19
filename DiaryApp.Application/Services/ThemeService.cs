@@ -165,7 +165,7 @@ public class ThemeService(
             };
 
             await _themeRepository.CreateThemeAsync(newTheme);
-            await ClearThemeCachesAsync(request.Id);
+            await ClearThemeCachesAsync(request.Id, authorId);
         }
     }
 
@@ -196,7 +196,7 @@ public class ThemeService(
         };
 
         await _themeRepository.UpdateThemeAsync(updatedTheme);
-        await ClearThemeCachesAsync(themeId);
+        await ClearThemeCachesAsync(themeId, existingTheme.AuthorId);
     }
 
     public async Task DeleteThemeAsync(string themeId)
@@ -209,19 +209,27 @@ public class ThemeService(
         }
 
         await _themeRepository.DeleteThemeAsync(themeId);
-        await ClearThemeCachesAsync(themeId);
+        await ClearThemeCachesAsync(themeId, theme.AuthorId);
     }
 
-    private async Task ClearThemeCachesAsync(string themeId)
+    private async Task ClearThemeCachesAsync(string themeId, string? authorId = null)
     {
         await _cacheService.RemoveAsync("themes:all_active");
         
         if (!string.IsNullOrEmpty(themeId))
         {
-            var theme = await _themeRepository.GetByIdAsync(themeId);
-            if (theme != null)
+            if (string.IsNullOrEmpty(authorId))
             {
-                await _cacheService.RemoveAsync($"themes:author:{theme.AuthorId}");
+                var theme = await _themeRepository.GetByIdAsync(themeId);
+                if (theme != null)
+                {
+                    authorId = theme.AuthorId;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(authorId))
+            {
+                await _cacheService.RemoveAsync($"themes:author:{authorId}");
             }
 
             await _cacheService.RemoveAsync($"theme:{themeId}");
