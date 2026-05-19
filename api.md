@@ -346,6 +346,10 @@ GET /api/users/me
   "gender": "Male",
   "birthday": "2000-01-01",
   "coinBalance": 500,
+  "currentStreak": 5,
+  "longestStreak": 10,
+  "streakFreezes": 2,
+  "recoverableStreak": 0,
   "activeThemeId": "theme_01",
   "authProvider": "Password",
   "createdAt": "2024-01-01T00:00:00Z"
@@ -609,6 +613,28 @@ POST /api/users/me/store/buy-freeze
 {
   "success": true,
   "message": "Streak freeze purchased successfully!"
+}
+```
+
+## Recover streak
+
+- Endpoint:
+
+```text
+POST /api/users/me/streak/recover
+```
+
+- Description: Manually recovers a broken streak using a streak freeze item.
+- Auth required: Yes
+
+### Responses:
+
+- [200 OK] - Streak recovered successfully.
+
+```json
+{
+  "success": true,
+  "message": "Streak recovered! Your current streak is now 11 days."
 }
 ```
 
@@ -1334,8 +1360,7 @@ GET /api/themes/:id/moods
 POST /api/themes
 ```
 
-- Description: Creates a new theme. Accessible only by Admin.
-- Auth required: Yes (Role: Admin)
+- Description: Creates a new theme.
 
 ### Request body (application/json):
 
@@ -1370,8 +1395,7 @@ POST /api/themes
 PUT /api/themes/:id
 ```
 
-- Description: Updates an existing theme. Accessible only by Admin.
-- Auth required: Yes (Role: Admin)
+- Description: Updates an existing theme.
 
 ### Responses:
 
@@ -1385,8 +1409,7 @@ PUT /api/themes/:id
 DELETE /api/themes/:id
 ```
 
-- Description: Deletes a theme. Accessible only by Admin.
-- Auth required: Yes (Role: Admin)
+- Description: Deletes a theme.
 
 ### Responses:
 

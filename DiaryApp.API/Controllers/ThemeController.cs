@@ -70,7 +70,6 @@ public class ThemeController(IThemeService themeService) : ControllerBase
 
     // POST: /api/themes
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateTheme([FromBody] CreateThemeRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -93,7 +92,6 @@ public class ThemeController(IThemeService themeService) : ControllerBase
 
     // PUT: /api/themes/{id}
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateTheme(string id, [FromBody] CreateThemeRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -115,7 +113,6 @@ public class ThemeController(IThemeService themeService) : ControllerBase
 
     // DELETE: /api/themes/{id}
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteTheme(string id)
     {
         try
