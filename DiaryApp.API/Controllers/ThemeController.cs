@@ -88,15 +88,18 @@ public class ThemeController(IThemeService themeService) : ControllerBase
 
     // POST: /api/themes
     [HttpPost]
-    public async Task<IActionResult> CreateTheme([FromBody] CreateThemeRequestDto request)
+    public async Task<IActionResult> CreateTheme([FromBody] List<CreateThemeRequestDto> requests)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
-            await _themeService.CreateThemeAsync(request);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            await _themeService.CreateThemesAsync(userId, requests);
             
-            return CreatedAtAction(nameof(GetThemeById), new { id = request.Id }, new { message = "Theme created successfully!!" }); // 201 Created
+            return Ok(new { message = $"{requests.Count} themes created successfully!!" });
         }
         catch (InvalidOperationException ex)
         {

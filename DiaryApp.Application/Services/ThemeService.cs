@@ -136,34 +136,37 @@ public class ThemeService(
         return dtos;
     }
 
-    public async Task CreateThemeAsync(CreateThemeRequestDto request)
+    public async Task CreateThemesAsync(string authorId, List<CreateThemeRequestDto> requests)
     {
-        var existingTheme = await _themeRepository.GetByIdAsync(request.Id);
-        if (existingTheme != null)
+        foreach (var request in requests)
         {
-            throw new InvalidOperationException($"A theme with the ID '{request.Id}' already exists.");
-        }
-
-        var newTheme = new Theme
-        {
-            Id = request.Id,
-            Name = request.Name,
-            Price = request.Price,
-            ThumbnailUrl = request.ThumbnailUrl ?? "",
-            BackgroundUrl = request.BackgroundUrl ?? "",
-            AuthorId = request.AuthorId,
-            IsOfficial = request.IsOfficial,
-            IsActive = request.IsActive,
-            Moods = request.Moods.Select(m => new ThemeMoodIcon
+            var existingTheme = await _themeRepository.GetByIdAsync(request.Id);
+            if (existingTheme != null)
             {
-                BaseMoodId = m.BaseMoodId,
-                IconUrl = m.IconUrl,
-                CustomName = m.CustomName ?? ""
-            }).ToList()
-        };
+                throw new InvalidOperationException($"A theme with the ID '{request.Id}' already exists.");
+            }
 
-        await _themeRepository.CreateThemeAsync(newTheme);
-        await ClearThemeCachesAsync(request.Id);
+            var newTheme = new Theme
+            {
+                Id = request.Id,
+                Name = request.Name,
+                Price = request.Price,
+                ThumbnailUrl = request.ThumbnailUrl ?? "",
+                BackgroundUrl = request.BackgroundUrl ?? "",
+                AuthorId = authorId,
+                IsOfficial = request.IsOfficial,
+                IsActive = request.IsActive,
+                Moods = request.Moods.Select(m => new ThemeMoodIcon
+                {
+                    BaseMoodId = m.BaseMoodId,
+                    IconUrl = m.IconUrl,
+                    CustomName = m.CustomName ?? ""
+                }).ToList()
+            };
+
+            await _themeRepository.CreateThemeAsync(newTheme);
+            await ClearThemeCachesAsync(request.Id);
+        }
     }
 
     public async Task UpdateThemeAsync(string themeId, CreateThemeRequestDto request)
@@ -181,7 +184,7 @@ public class ThemeService(
             Price = request.Price,
             ThumbnailUrl = request.ThumbnailUrl ?? "",
             BackgroundUrl = request.BackgroundUrl ?? "",
-            AuthorId = request.AuthorId,
+            AuthorId = existingTheme.AuthorId,
             IsOfficial = request.IsOfficial,
             IsActive = request.IsActive,
             Moods = request.Moods.Select(m => new ThemeMoodIcon

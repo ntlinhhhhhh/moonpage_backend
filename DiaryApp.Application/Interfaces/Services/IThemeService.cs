@@ -12,7 +12,7 @@ public interface IThemeService
     Task<ThemeResponseDto?> GetThemeByIdAsync(string themeId);
     Task<IEnumerable<ThemeMoodResponseDto>> GetThemeMoodsAsync(string themeId);
     Task<ThemeMoodResponseDto?> GetMoodIconAsync(string themeId, BaseMood baseMoodId);
-    Task CreateThemeAsync(CreateThemeRequestDto request);
+    Task CreateThemesAsync(string authorId, List<CreateThemeRequestDto> requests);
     Task UpdateThemeAsync(string themeId, CreateThemeRequestDto request);
     Task DeleteThemeAsync(string themeId);
 

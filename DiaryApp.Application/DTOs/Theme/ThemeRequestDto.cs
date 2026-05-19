@@ -18,9 +18,6 @@ public class CreateThemeRequestDto
 {
     [Required]
     public string Id { get; set; } = string.Empty; // Admin define
-
-    [Required]
-    public string AuthorId { get; set; } = string.Empty; // Admin define
     
     [Required(ErrorMessage = "Theme name is required.")]
     public string Name { get; set; } = string.Empty;
