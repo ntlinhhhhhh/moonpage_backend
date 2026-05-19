@@ -1395,7 +1395,7 @@ GET /api/themes/:id/moods
 
 - [200 OK] - List of mood icons.
 
-## Create theme (Admin/User)
+## Create themes (Admin/User)
 
 - Endpoint:
 
@@ -1403,38 +1403,46 @@ GET /api/themes/:id/moods
 POST /api/themes
 ```
 
-- Description: Creates a new theme. Official themes can only be listed in store by setting isOfficial to true (typically Admin only).
+- Description: Creates one or multiple new themes. The `authorId` is automatically determined from the authenticated user's token. Official themes can only be listed in store by setting `isOfficial` to true (typically Admin only).
+- Auth required: Yes
 
 ### Request body (application/json):
 
-- id (string, Required): Unique theme ID.
-- authorId (string, Required): Author's user ID.
-- name (string, Required)
-- price (int, Required)
-- thumbnailUrl (string, Optional)
-- backgroundUrl (string, Optional)
-- isOfficial (bool, Optional): Set to true for store themes, false for personal. Default is false.
-- isActive (bool, Optional): Default is true.
-- moods (array, Required): List of mood icons.
+- An array of theme objects, each containing:
+  - id (string, Required): Unique theme ID.
+  - name (string, Required)
+  - price (int, Required)
+  - thumbnailUrl (string, Optional)
+  - backgroundUrl (string, Optional)
+  - isOfficial (bool, Optional): Set to true for store themes, false for personal. Default is false.
+  - isActive (bool, Optional): Default is true.
+  - moods (array, Required): List of mood icons.
 
 ```json
-{
-  "id": "theme_summer",
-  "authorId": "user_id_here",
-  "name": "Summer Vibe",
-  "price": 300,
-  "isOfficial": true,
-  "moods": [
-    { "baseMoodId": 5, "iconUrl": "https://...", "customName": "Sunshine" }
-  ]
-}
+[
+  {
+    "id": "theme_summer",
+    "name": "Summer Vibe",
+    "price": 300,
+    "isOfficial": true,
+    "moods": [
+      { "baseMoodId": 5, "iconUrl": "https://...", "customName": "Sunshine" }
+    ]
+  }
+]
 ```
 
 ### Responses:
 
-- [201 Created] - Theme created.
+- [200 OK] - Themes created successfully.
 
-## Update theme (Admin Only)
+```json
+{
+  "message": "1 themes created successfully!!"
+}
+```
+
+## Update theme
 
 - Endpoint:
 
@@ -1442,7 +1450,12 @@ POST /api/themes
 PUT /api/themes/:id
 ```
 
-- Description: Updates an existing theme.
+- Description: Updates an existing theme. `authorId` cannot be changed and is not required in the body.
+- Auth required: Yes
+
+### Request body (application/json):
+
+- Same as single theme object in Create Theme (excluding `authorId`).
 
 ### Responses:
 
