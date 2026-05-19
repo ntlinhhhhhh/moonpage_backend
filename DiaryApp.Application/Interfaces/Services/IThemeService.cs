@@ -8,6 +8,7 @@ namespace DiaryApp.Application.Interfaces.Services;
 public interface IThemeService
 {
     Task<IEnumerable<ThemeResponseDto>> GetAllActiveThemesAsync();
+    Task<IEnumerable<ThemeResponseDto>> GetThemesByAuthorIdAsync(string authorId);
     Task<ThemeResponseDto?> GetThemeByIdAsync(string themeId);
     Task<IEnumerable<ThemeMoodResponseDto>> GetThemeMoodsAsync(string themeId);
     Task<ThemeMoodResponseDto?> GetMoodIconAsync(string themeId, BaseMood baseMoodId);

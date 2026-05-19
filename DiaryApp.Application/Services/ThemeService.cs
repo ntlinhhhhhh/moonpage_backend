@@ -29,7 +29,34 @@ public class ThemeService(
             Name = theme.Name,
             Price = theme.Price,
             ThumbnailUrl = theme.ThumbnailUrl,
-            BackgroundUrl = theme.BackgroundUrl   
+            BackgroundUrl = theme.BackgroundUrl,
+            AuthorId = theme.AuthorId,
+            IsOfficial = theme.IsOfficial
+        });
+
+        await _cacheService.SetAsync(cacheKey, dtos, _cacheTtl);
+
+        return dtos;
+    }
+
+    public async Task<IEnumerable<ThemeResponseDto>> GetThemesByAuthorIdAsync(string authorId)
+    {
+        string cacheKey = $"themes:author:{authorId}";
+
+        var cachedThemes = await _cacheService.GetAsync<IEnumerable<ThemeResponseDto>>(cacheKey);
+        if (cachedThemes != null) return cachedThemes;
+
+        var themes = await _themeRepository.GetThemesByAuthorIdAsync(authorId);
+
+        var dtos = themes.Select(theme => new ThemeResponseDto()
+        {
+            Id = theme.Id,
+            Name = theme.Name,
+            Price = theme.Price,
+            ThumbnailUrl = theme.ThumbnailUrl,
+            BackgroundUrl = theme.BackgroundUrl,
+            AuthorId = theme.AuthorId,
+            IsOfficial = theme.IsOfficial
         });
 
         await _cacheService.SetAsync(cacheKey, dtos, _cacheTtl);
@@ -55,7 +82,9 @@ public class ThemeService(
             Name = theme.Name,
             Price = theme.Price,
             ThumbnailUrl = theme.ThumbnailUrl,
-            BackgroundUrl = theme.BackgroundUrl   
+            BackgroundUrl = theme.BackgroundUrl,
+            AuthorId = theme.AuthorId,
+            IsOfficial = theme.IsOfficial
         };
 
         await _cacheService.SetAsync(cacheKey, dto, _cacheTtl);
@@ -122,6 +151,8 @@ public class ThemeService(
             Price = request.Price,
             ThumbnailUrl = request.ThumbnailUrl ?? "",
             BackgroundUrl = request.BackgroundUrl ?? "",
+            AuthorId = request.AuthorId,
+            IsOfficial = request.IsOfficial,
             IsActive = request.IsActive,
             Moods = request.Moods.Select(m => new ThemeMoodIcon
             {
@@ -150,6 +181,8 @@ public class ThemeService(
             Price = request.Price,
             ThumbnailUrl = request.ThumbnailUrl ?? "",
             BackgroundUrl = request.BackgroundUrl ?? "",
+            AuthorId = request.AuthorId,
+            IsOfficial = request.IsOfficial,
             IsActive = request.IsActive,
             Moods = request.Moods.Select(m => new ThemeMoodIcon
             {
@@ -182,6 +215,12 @@ public class ThemeService(
         
         if (!string.IsNullOrEmpty(themeId))
         {
+            var theme = await _themeRepository.GetByIdAsync(themeId);
+            if (theme != null)
+            {
+                await _cacheService.RemoveAsync($"themes:author:{theme.AuthorId}");
+            }
+
             await _cacheService.RemoveAsync($"theme:{themeId}");
             
             await _cacheService.RemoveAsync($"theme_moods_list:{themeId}");

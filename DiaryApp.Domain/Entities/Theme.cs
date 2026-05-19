@@ -10,6 +10,8 @@ public class Theme
     public int Price { get; set; } = 0;
     public required string ThumbnailUrl { get; set; }
     public required string BackgroundUrl { get; set; }
+    public string AuthorId { get; set; } = string.Empty;
+    public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
 
     // List 5 icon of theme

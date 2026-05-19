@@ -18,6 +18,9 @@ public class CreateThemeRequestDto
 {
     [Required]
     public string Id { get; set; } = string.Empty; // Admin define
+
+    [Required]
+    public string AuthorId { get; set; } = string.Empty; // Admin define
     
     [Required(ErrorMessage = "Theme name is required.")]
     public string Name { get; set; } = string.Empty;
@@ -27,6 +30,8 @@ public class CreateThemeRequestDto
 
     public string? ThumbnailUrl { get; set; }
     public string? BackgroundUrl { get; set; }
+
+    public bool IsOfficial { get; set; } = false;
 
     public bool IsActive { get; set; } = true;
 

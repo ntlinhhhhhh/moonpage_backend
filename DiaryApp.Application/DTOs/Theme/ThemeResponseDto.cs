@@ -7,5 +7,7 @@ public class ThemeResponseDto
     public int Price { get; set; }
     public string? ThumbnailUrl { get; set; }
     public string? BackgroundUrl { get; set; }
+    public string AuthorId { get; set; } = string.Empty;
+    public bool IsOfficial { get; set; }
 
 }

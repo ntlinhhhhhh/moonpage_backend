@@ -27,7 +27,16 @@ public class ThemeRepository : IThemeRepository
 
     async Task<IEnumerable<Theme>> IThemeRepository.GetAllActiveThemesAsync()
     {
-        Query query = _themeCollection.WhereEqualTo("IsActive", true);
+        Query query = _themeCollection.WhereEqualTo("IsActive", true)
+                                     .WhereEqualTo("IsOfficial", true);
+        QuerySnapshot snapshot = await query.GetSnapshotAsync();
+
+        return snapshot.Documents.Select(MapSnapshotToTheme);
+    }
+
+    async Task<IEnumerable<Theme>> IThemeRepository.GetThemesByAuthorIdAsync(string authorId)
+    {
+        Query query = _themeCollection.WhereEqualTo("AuthorId", authorId);
         QuerySnapshot snapshot = await query.GetSnapshotAsync();
 
         return snapshot.Documents.Select(MapSnapshotToTheme);
@@ -72,6 +81,8 @@ public class ThemeRepository : IThemeRepository
             { "Price", theme.Price },
             { "ThumbnailUrl", theme.ThumbnailUrl },
             { "BackgroundUrl", theme.BackgroundUrl },
+            { "AuthorId", theme.AuthorId },
+            { "IsOfficial", theme.IsOfficial },
             { "IsActive", theme.IsActive },
             { "Moods", theme.Moods.Select(m => new Dictionary<string, object>
                 {
@@ -92,6 +103,8 @@ public class ThemeRepository : IThemeRepository
             Price = snapshot.GetValue<int>("Price"),
             ThumbnailUrl = snapshot.GetValue<string>("ThumbnailUrl"),
             BackgroundUrl = snapshot.GetValue<string>("BackgroundUrl"),
+            AuthorId = snapshot.ContainsField("AuthorId") ? snapshot.GetValue<string>("AuthorId") : string.Empty,
+            IsOfficial = snapshot.ContainsField("IsOfficial") ? snapshot.GetValue<bool>("IsOfficial") : false,
             IsActive = snapshot.GetValue<bool>("IsActive"),
             Moods = new List<ThemeMoodIcon>()
         };

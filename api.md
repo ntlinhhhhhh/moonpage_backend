@@ -1307,7 +1307,7 @@ DELETE /api/activities/:id
 
 # Theme Endpoints:
 
-## Get all active themes
+## Get all active themes (Store)
 
 - Endpoint:
 
@@ -1315,12 +1315,55 @@ DELETE /api/activities/:id
 GET /api/themes
 ```
 
-- Description: Lists all themes available in the store.
+- Description: Lists all official themes available in the store (IsOfficial = true).
 - Auth required: Yes
 
 ### Responses:
 
-- [200 OK] - List of themes.
+- [200 OK] - List of official themes.
+
+```json
+[
+  {
+    "id": "theme_01",
+    "name": "Classic",
+    "price": 0,
+    "thumbnailUrl": "https://...",
+    "backgroundUrl": "https://...",
+    "authorId": "system",
+    "isOfficial": true
+  }
+]
+```
+
+## Get my themes
+
+- Endpoint:
+
+```text
+GET /api/themes/me
+```
+
+- Description: Retrieves all themes created by the authenticated user (typically personal themes).
+- Auth required: Yes
+
+### Responses:
+
+- [200 OK] - List of user-created themes.
+
+```json
+[
+  {
+    "id": "theme_user_01",
+    "name": "My Summer Vibe",
+    "price": 0,
+    "thumbnailUrl": "https://...",
+    "backgroundUrl": "https://...",
+    "authorId": "user_id_here",
+    "isOfficial": false
+  }
+]
+```
 
 ## Get theme by ID
 
@@ -1352,7 +1395,7 @@ GET /api/themes/:id/moods
 
 - [200 OK] - List of mood icons.
 
-## Create theme (Admin Only)
+## Create theme (Admin/User)
 
 - Endpoint:
 
@@ -1360,23 +1403,27 @@ GET /api/themes/:id/moods
 POST /api/themes
 ```
 
-- Description: Creates a new theme.
+- Description: Creates a new theme. Official themes can only be listed in store by setting isOfficial to true (typically Admin only).
 
 ### Request body (application/json):
 
 - id (string, Required): Unique theme ID.
+- authorId (string, Required): Author's user ID.
 - name (string, Required)
 - price (int, Required)
 - thumbnailUrl (string, Optional)
 - backgroundUrl (string, Optional)
+- isOfficial (bool, Optional): Set to true for store themes, false for personal. Default is false.
 - isActive (bool, Optional): Default is true.
 - moods (array, Required): List of mood icons.
 
 ```json
 {
   "id": "theme_summer",
+  "authorId": "user_id_here",
   "name": "Summer Vibe",
   "price": 300,
+  "isOfficial": true,
   "moods": [
     { "baseMoodId": 5, "iconUrl": "https://...", "customName": "Sunshine" }
   ]

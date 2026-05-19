@@ -7,6 +7,7 @@ public interface IThemeRepository
 {
     // get all theme of store 
     Task<IEnumerable<Theme>> GetAllActiveThemesAsync();
+    Task<IEnumerable<Theme>> GetThemesByAuthorIdAsync(string authorId);
 
     // get detail a theme
     Task<Theme?> GetByIdAsync(string themeId);

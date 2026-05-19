@@ -29,6 +29,24 @@ public class ThemeController(IThemeService themeService) : ControllerBase
         }
     }
 
+    // GET: /api/themes/me
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMyThemes()
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var themes = await _themeService.GetThemesByAuthorIdAsync(userId);
+            return Ok(themes);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Server error: " + ex.Message });
+        }
+    }
+
     // GET: /api/themes/{id}
     [HttpGet("{id}")]
     public async Task<IActionResult> GetThemeById(string id)
