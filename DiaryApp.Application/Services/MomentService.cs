@@ -153,7 +153,7 @@ public class MomentService(
             Id = moment.Id ?? string.Empty,
             UserId = moment.UserId,
             UserName = moment.UserName,
-            UserAvatarUrl = moment.UserAvatarUrl,
+            UserAvatarUrl = _googleStorageService.GetImageUrl(moment.UserAvatarUrl),
             DailyLogId = moment.DailyLogId,
             ImageUrl = _googleStorageService.GetImageUrl(moment.ImageUrl),
             Caption = moment.Caption,

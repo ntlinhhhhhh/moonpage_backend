@@ -18,7 +18,8 @@ public class AuthService(
     IEmailService emailService,
     IJwtProvider jwtProvider,
     IGoogleAuthProvider googleAuthProvider,
-    IRedisCacheService cacheService
+    IRedisCacheService cacheService,
+    IGoogleStorageService googleStorageService
 ) : IAuthService
 {
     private readonly IUserRepository _userRepository = userRepository;
@@ -26,6 +27,7 @@ public class AuthService(
     private readonly IJwtProvider _jwtProvider = jwtProvider;
     private readonly IGoogleAuthProvider _googleAuthProvider = googleAuthProvider;
     private readonly IRedisCacheService _cacheService = cacheService;
+    private readonly IGoogleStorageService _googleStorageService = googleStorageService;
 
     private string GetOtpKey(string email)
     {
@@ -71,7 +73,7 @@ public class AuthService(
             Token = _jwtProvider.GenerateToken(newUser),
             UserId = newUser.Id,
             Name = newUser.Name,
-            AvatarUrl = newUser.AvatarUrl
+            AvatarUrl = _googleStorageService.GetImageUrl(newUser.AvatarUrl)
         };
     }
 
@@ -110,7 +112,7 @@ public class AuthService(
             Token = _jwtProvider.GenerateToken(user),
             UserId = user.Id,
             Name = user.Name ?? "username",
-            AvatarUrl = user.AvatarUrl
+            AvatarUrl = _googleStorageService.GetImageUrl(user.AvatarUrl)
         };
     }
 
@@ -144,7 +146,7 @@ public class AuthService(
             Token = _jwtProvider.GenerateToken(user),
             UserId = user.Id,
             Name = user.Name ?? "username",
-            AvatarUrl = user.AvatarUrl
+            AvatarUrl = _googleStorageService.GetImageUrl(user.AvatarUrl)
         };
     }
 

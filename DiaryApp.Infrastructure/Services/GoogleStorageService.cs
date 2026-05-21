@@ -23,15 +23,25 @@ public class GoogleStorageService : IGoogleStorageService
         var storageClient = await StorageClient.CreateAsync();
 
         string objectKey = $"diary_app/{folderName}/{fileName}";
+        string token = Guid.NewGuid().ToString();
+
+        var metadata = new Google.Apis.Storage.v1.Data.Object
+        {
+            Bucket = _bucketName,
+            Name = objectKey,
+            ContentType = "image/jpeg",
+            Metadata = new Dictionary<string, string>
+            {
+                { "firebaseStorageDownloadTokens", token }
+            }
+        };
 
         await storageClient.UploadObjectAsync(
-            bucket: _bucketName,
-            objectName: objectKey,
-            contentType: "image/jpeg",
-            source: fileStream
+            metadata,
+            fileStream
         );
 
-        return objectKey;
+        return $"{objectKey}?token={token}";
     }
 
     public async Task<string?> UploadImageFromUrlAsync(string imageUrl, string folderName)
@@ -52,6 +62,14 @@ public class GoogleStorageService : IGoogleStorageService
         if (objectKey.StartsWith("http://") || objectKey.StartsWith("https://")) 
         {
             return objectKey;
+        }
+
+        if (objectKey.Contains("?token="))
+        {
+            var parts = objectKey.Split("?token=");
+            string actualKey = parts[0];
+            string token = parts[1];
+            return $"https://firebasestorage.googleapis.com/v0/b/{_bucketName}/o/{Uri.EscapeDataString(actualKey)}?alt=media&token={token}";
         }
 
         return $"https://firebasestorage.googleapis.com/v0/b/{_bucketName}/o/{Uri.EscapeDataString(objectKey)}?alt=media";
@@ -79,6 +97,10 @@ public class GoogleStorageService : IGoogleStorageService
                     var splitPath = objectKeyOrUrl.Split("/o/")[1].Split("?")[0];
                     finalObjectKey = Uri.UnescapeDataString(splitPath);
                 }
+            }
+            else if (objectKeyOrUrl.Contains("?token="))
+            {
+                finalObjectKey = objectKeyOrUrl.Split("?token=")[0];
             }
 
             await storageClient.DeleteObjectAsync(_bucketName, finalObjectKey);

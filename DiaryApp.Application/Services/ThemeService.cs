@@ -7,11 +7,13 @@ namespace DiaryApp.Application.Interfaces.Services;
 
 public class ThemeService(
     IThemeRepository themeRepository,
-    IRedisCacheService cacheService
+    IRedisCacheService cacheService,
+    IGoogleStorageService googleStorageService
     ) : IThemeService
 {
     private readonly IThemeRepository _themeRepository = themeRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
+    private readonly IGoogleStorageService _googleStorageService = googleStorageService;
     private readonly TimeSpan _cacheTtl = TimeSpan.FromDays(7);
 
     public async Task<IEnumerable<ThemeResponseDto>> GetAllActiveThemesAsync()
@@ -28,8 +30,8 @@ public class ThemeService(
             Id = theme.Id,
             Name = theme.Name,
             Price = theme.Price,
-            ThumbnailUrl = theme.ThumbnailUrl,
-            BackgroundUrl = theme.BackgroundUrl,
+            ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
+            BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         });
@@ -53,8 +55,8 @@ public class ThemeService(
             Id = theme.Id,
             Name = theme.Name,
             Price = theme.Price,
-            ThumbnailUrl = theme.ThumbnailUrl,
-            BackgroundUrl = theme.BackgroundUrl,
+            ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
+            BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         });
@@ -81,8 +83,8 @@ public class ThemeService(
             Id = themeId,
             Name = theme.Name,
             Price = theme.Price,
-            ThumbnailUrl = theme.ThumbnailUrl,
-            BackgroundUrl = theme.BackgroundUrl,
+            ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
+            BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         };
@@ -105,7 +107,7 @@ public class ThemeService(
         var dto = new ThemeMoodResponseDto
         {
             BaseMoodId = baseMoodId.ToString(),
-            IconUrl = moodIcon.IconUrl,
+            IconUrl = _googleStorageService.GetImageUrl(moodIcon.IconUrl),
             CustomName = moodIcon.CustomName
         };
 
@@ -128,7 +130,7 @@ public class ThemeService(
         var dtos = theme.Moods.Select(m => new ThemeMoodResponseDto
         {
             BaseMoodId = m.BaseMoodId.ToString(),
-            IconUrl = m.IconUrl,
+            IconUrl = _googleStorageService.GetImageUrl(m.IconUrl),
             CustomName = m.CustomName
         });
 

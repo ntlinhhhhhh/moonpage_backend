@@ -164,7 +164,7 @@ public class UserService(
         {
             Id = u.Id,
             Name = u.Name,
-            AvatarUrl = u.AvatarUrl,
+            AvatarUrl = _googleStorageService.GetImageUrl(u.AvatarUrl),
             Email = u.Email
         });
     }
@@ -384,7 +384,7 @@ public class UserService(
         {
             Id = u.Id,
             Name = u.Name,
-            AvatarUrl = u.AvatarUrl,
+            AvatarUrl = _googleStorageService.GetImageUrl(u.AvatarUrl),
             Email = u.Email
         });
     }
