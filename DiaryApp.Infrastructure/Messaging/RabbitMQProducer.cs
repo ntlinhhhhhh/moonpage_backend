@@ -8,12 +8,17 @@ using RabbitMQ.Client;
 
 namespace DiaryApp.Infrastructure.Messaging;
 
-public class RabbitMQProducer(IConfiguration configuration) : IMessageProducer
+public class RabbitMQProducer(IOptions<RabbitMQSettings> options) : IMessageProducer
 {
-    private readonly string _rabbitMqUrl = configuration["RabbitMQSettings:Url"] ?? string.Empty;
+    private readonly string _rabbitMqUrl = options.Value.Url;
 
     public async Task SendMessageAsync<T>(T message, string queueName)
     {
+        if (string.IsNullOrEmpty(_rabbitMqUrl))
+        {
+            throw new InvalidOperationException("RabbitMQ Connection URL is not configured.");
+        }
+
         var factory = new ConnectionFactory { Uri = new Uri(_rabbitMqUrl) };
         
         await using var connection = await factory.CreateConnectionAsync();
