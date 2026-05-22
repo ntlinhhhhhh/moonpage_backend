@@ -45,6 +45,9 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+    #depends_on:
+     # - redis
+      #- rabbitmq
     restart: unless-stopped 
 
   redis:
@@ -58,9 +61,6 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: diary-rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin123
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -68,11 +68,9 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq/
     healthcheck:
       test: rabbitmq-diagnostics -q ping
-      interval: 10s
-      timeout: 10s
-      retries: 10
+      interval: 5s
+      timeout: 5s
+      retries: 5
 volumes:
   redis_data:
   rabbitmq_data:
-
-
