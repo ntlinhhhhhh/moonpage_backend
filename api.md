@@ -731,10 +731,10 @@ GET /api/dailylogs/date/:date
   "id": "log_id",
   "baseMoodId": 4,
   "date": "2024-04-20",
-  "yearMonth": "2024-04",
   "note": "Great day!",
   "sleepHours": 8.0,
   "sleepStartTime": "22:00",
+  "wakeupTime": "06:30",
   "isMenstruation": false,
   "menstruationPhase": null,
   "steps": 10000,
@@ -768,13 +768,15 @@ GET /api/dailylogs/month/:yearMonth
     "id": "log_id_1",
     "baseMoodId": 4,
     "date": "2024-04-20",
-    "yearMonth": "2024-04",
     "note": "...",
     "sleepHours": 7.5,
     "sleepStartTime": "23:00",
+    "wakeupTime": "06:30",
     "isMenstruation": false,
     "menstruationPhase": "",
     "steps": 8000,
+    "calories": 400,
+    "distance": 4.5,
     "musicRecord": "",
     "dailyPhotos": [],
     "activityIds": [],
@@ -1184,8 +1186,8 @@ GET /api/statistics/summary
   "moodFlow": [
     { "date": "2024-04-20", "moodId": 4 }
   ],
-  "influenceActivities": [
-    { "activityId": "act_1", "activityName": "Reading", "averageMoodScore": 4.8, "occurrence": 5 }
+  "bestActivities": [
+    { "activityId": "act_1", "activityName": "Reading", "iconUrl": "https://...", "averageMoodScore": 4.8, "occurrence": 5 }
   ],
   "averageSleepHours": 7.5,
   "averageSleepStartTime": "23:00",
@@ -1330,6 +1332,8 @@ GET /api/themes
     "price": 0,
     "thumbnailUrl": "https://...",
     "backgroundUrl": "https://...",
+    "backgroundDarkColor": "0xFFF4F6F1",
+    "backgroundLightColor": "0xFF1C1C1C",
     "authorId": "system",
     "isOfficial": true
   }
@@ -1359,6 +1363,8 @@ GET /api/themes/me
     "price": 0,
     "thumbnailUrl": "https://...",
     "backgroundUrl": "https://...",
+    "backgroundDarkColor": "0xFFF4F6F1",
+    "backgroundLightColor": "0xFF1C1C1C",
     "authorId": "user_id_here",
     "isOfficial": false
   }
@@ -1395,7 +1401,7 @@ GET /api/themes/:id/moods
 
 - [200 OK] - List of mood icons.
 
-## Create themes (Admin/User)
+## Create theme (Upload)
 
 - Endpoint:
 
@@ -1403,20 +1409,58 @@ GET /api/themes/:id/moods
 POST /api/themes
 ```
 
-- Description: Creates one or multiple new themes. The `authorId` is automatically determined from the authenticated user's token. Official themes can only be listed in store by setting `isOfficial` to true (typically Admin only).
+- Description: Creates a new theme by uploading image files. Accessible to all users. Official themes can only be created by Admins by setting `isOfficial` to true.
 - Auth required: Yes
+
+### Request body (multipart/form-data):
+
+- id (string, Required): Unique theme ID.
+- name (string, Required)
+- price (int, Required)
+- ThumbnailFile (File, Optional): Thumbnail image.
+- BackgroundFile (File, Optional): Background image.
+- backgroundDarkColor (string, Optional)
+- backgroundLightColor (string, Optional)
+- isOfficial (bool, Optional): Set to true for store themes, false for personal. Only Admins can set this to true.
+- isActive (bool, Optional): Default is true.
+- Moods[i].BaseMoodId (int, Required): Mood ID (1-5).
+- Moods[i].IconFile (File, Required): Icon image for the mood.
+- Moods[i].CustomName (string, Optional): Custom name for the mood.
+
+### Responses:
+
+- [200 OK] - Theme created successfully.
+
+```json
+{
+  "message": "Theme created successfully!!"
+}
+```
+
+## List create themes (Admin Only)
+
+- Endpoint:
+
+```text
+POST /api/themes/list
+```
+
+- Description: Creates multiple new themes using existing image URLs. Accessible only by Admins.
+- Auth required: Yes (Role: Admin)
 
 ### Request body (application/json):
 
 - An array of theme objects, each containing:
-  - id (string, Required): Unique theme ID.
+  - id (string, Required)
   - name (string, Required)
   - price (int, Required)
   - thumbnailUrl (string, Optional)
   - backgroundUrl (string, Optional)
-  - isOfficial (bool, Optional): Set to true for store themes, false for personal. Default is false.
-  - isActive (bool, Optional): Default is true.
-  - moods (array, Required): List of mood icons.
+  - backgroundDarkColor (string, Optional)
+  - backgroundLightColor (string, Optional)
+  - isOfficial (bool, Optional)
+  - isActive (bool, Optional)
+  - moods (array, Required): List of mood icon objects (`baseMoodId`, `iconUrl`, `customName`).
 
 ```json
 [
@@ -1425,6 +1469,8 @@ POST /api/themes
     "name": "Summer Vibe",
     "price": 300,
     "isOfficial": true,
+    "thumbnailUrl": "https://...",
+    "backgroundUrl": "https://...",
     "moods": [
       { "baseMoodId": 5, "iconUrl": "https://...", "customName": "Sunshine" }
     ]
@@ -1450,17 +1496,22 @@ POST /api/themes
 PUT /api/themes/:id
 ```
 
-- Description: Updates an existing theme. `authorId` cannot be changed and is not required in the body.
+- Description: Updates an existing theme by uploading new image files. Only the author or an Admin can perform this action.
 - Auth required: Yes
 
-### Request body (application/json):
+### Request body (multipart/form-data):
 
-- Same as single theme object in Create Theme (excluding `authorId`).
+- Same as Create Theme (Upload).
 
 ### Responses:
 
 - [200 OK] - Theme updated.
 
+```json
+{
+  "message": "Theme updated successfully!"
+}
+```
 ## Delete theme (Admin Only)
 
 - Endpoint:

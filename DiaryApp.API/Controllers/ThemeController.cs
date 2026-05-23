@@ -86,9 +86,41 @@ public class ThemeController(IThemeService themeService) : ControllerBase
         }
     }
 
-    // POST: /api/themes
+    // POST: /api/themes (Upload)
     [HttpPost]
-    public async Task<IActionResult> CreateTheme([FromBody] List<CreateThemeRequestDto> requests)
+    public async Task<IActionResult> CreateTheme([FromForm] UploadThemeRequestDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            if (request.IsOfficial && role != "Admin")
+            {
+                return Forbid();
+            }
+
+            await _themeService.CreateThemeAsync(userId, request);
+            
+            return Ok(new { message = "Theme created successfully!!" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Server error: " + ex.Message }); 
+        }
+    }
+
+    // POST: /api/themes/list (Admin Only)
+    [Authorize(Roles = "Admin")]
+    [HttpPost("list")]
+    public async Task<IActionResult> CreateThemesList([FromBody] List<CreateThemeRequestDto> requests)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -97,7 +129,7 @@ public class ThemeController(IThemeService themeService) : ControllerBase
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            await _themeService.CreateThemesAsync(userId, requests);
+            await _themeService.CreateThemesListAsync(userId, requests);
             
             return Ok(new { message = $"{requests.Count} themes created successfully!!" });
         }
@@ -113,12 +145,29 @@ public class ThemeController(IThemeService themeService) : ControllerBase
 
     // PUT: /api/themes/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateTheme(string id, [FromBody] CreateThemeRequestDto request)
+    public async Task<IActionResult> UpdateTheme(string id, [FromForm] UploadThemeRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+
+            var existingTheme = await _themeService.GetThemeByIdAsync(id);
+            if (existingTheme == null) return NotFound(new { message = "Theme not found." });
+
+            // Only author or admin can update
+            if (existingTheme.AuthorId != userId && role != "Admin")
+            {
+                return Forbid();
+            }
+
+            if (request.IsOfficial && role != "Admin")
+            {
+                return Forbid();
+            }
+
             await _themeService.UpdateThemeAsync(id, request);
             return Ok(new { message = "Theme updated successfully!" });
         }
@@ -128,7 +177,7 @@ public class ThemeController(IThemeService themeService) : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Server error: " + ex.Message }); // 500
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Server error: " + ex.Message }); 
         }
     }
 
