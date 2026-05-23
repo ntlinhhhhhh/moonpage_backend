@@ -32,6 +32,8 @@ public class ThemeService(
             Price = theme.Price,
             ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
             BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
+            BackgroundDarkColor = theme.BackgroundDarkColor,
+            BackgroundLightColor = theme.BackgroundLightColor,
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         });
@@ -57,6 +59,8 @@ public class ThemeService(
             Price = theme.Price,
             ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
             BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
+            BackgroundDarkColor = theme.BackgroundDarkColor,
+            BackgroundLightColor = theme.BackgroundLightColor,
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         });
@@ -85,6 +89,8 @@ public class ThemeService(
             Price = theme.Price,
             ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
             BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
+            BackgroundDarkColor = theme.BackgroundDarkColor,
+            BackgroundLightColor = theme.BackgroundLightColor,
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         };
@@ -155,6 +161,8 @@ public class ThemeService(
                 Price = request.Price,
                 ThumbnailUrl = request.ThumbnailUrl ?? "",
                 BackgroundUrl = request.BackgroundUrl ?? "",
+                BackgroundDarkColor = request.BackgroundDarkColor,
+                BackgroundLightColor = request.BackgroundLightColor,
                 AuthorId = authorId,
                 IsOfficial = request.IsOfficial,
                 IsActive = request.IsActive,
@@ -186,6 +194,8 @@ public class ThemeService(
             Price = request.Price,
             ThumbnailUrl = request.ThumbnailUrl ?? "",
             BackgroundUrl = request.BackgroundUrl ?? "",
+            BackgroundDarkColor = request.BackgroundDarkColor,
+            BackgroundLightColor = request.BackgroundLightColor,
             AuthorId = existingTheme.AuthorId,
             IsOfficial = request.IsOfficial,
             IsActive = request.IsActive,

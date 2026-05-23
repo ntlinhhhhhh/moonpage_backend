@@ -27,6 +27,8 @@ public class CreateThemeRequestDto
 
     public string? ThumbnailUrl { get; set; }
     public string? BackgroundUrl { get; set; }
+    public string BackgroundDarkColor { get; set; } = "0xFFF4F6F1";
+    public string BackgroundLightColor { get; set; } = "0xFF1C1C1C";
 
     public bool IsOfficial { get; set; } = false;
 
