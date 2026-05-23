@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using DiaryApp.Domain.Enums;
 
 namespace DiaryApp.Application.DTOs.Theme;
 
-public class CreateThemeMoodDto
+public class UploadThemeMoodDto
 {
     [Required]
     public BaseMood BaseMoodId { get; set; }
@@ -15,7 +16,7 @@ public class CreateThemeMoodDto
     public string? CustomName { get; set; }
 }
 
-public class CreateThemeRequestDto
+public class UploadThemeRequestDto
 {
     [Required]
     public string Id { get; set; } = string.Empty; 
@@ -26,13 +27,15 @@ public class CreateThemeRequestDto
     [Range(0, int.MaxValue, ErrorMessage = "Please enter a valid price.")]
     public int Price { get; set; }
 
-    public string? ThumbnailUrl { get; set; }
-    public string? BackgroundUrl { get; set; }
-    public string BackgroundDarkColor { get; set; } = "0xFFF4F6F1";
-    public string BackgroundLightColor { get; set; } = "0xFF1C1C1C";
+    public IFormFile? Thumbnail { get; set; }
+    
+    public IFormFile? Background { get; set; }
+
+    public string? BackgroundDarkColor { get; set; }
+    public string? BackgroundLightColor { get; set; }
 
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
 
-    public List<CreateThemeMoodDto> Moods { get; set; } = new();
+    public string? Moods { get; set; } 
 }

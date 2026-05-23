@@ -1,19 +1,28 @@
 using System;
+using System.IO;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using DiaryApp.Application.DTOs.Theme;
 using DiaryApp.Domain.Entities;
 using DiaryApp.Domain.Enums;
+using DiaryApp.Application.Interfaces.Services;
+using DiaryApp.Application.Interfaces;
 
 namespace DiaryApp.Application.Interfaces.Services;
 
 public class ThemeService(
     IThemeRepository themeRepository,
     IRedisCacheService cacheService,
-    IGoogleStorageService googleStorageService
+    IGoogleStorageService googleStorageService,
+    IMessageProducer messageProducer
     ) : IThemeService
 {
     private readonly IThemeRepository _themeRepository = themeRepository;
     private readonly IRedisCacheService _cacheService = cacheService;
     private readonly IGoogleStorageService _googleStorageService = googleStorageService;
+    private readonly IMessageProducer _messageProducer = messageProducer;
     private readonly TimeSpan _cacheTtl = TimeSpan.FromDays(7);
 
     public async Task<IEnumerable<ThemeResponseDto>> GetAllActiveThemesAsync()
@@ -113,7 +122,7 @@ public class ThemeService(
         var dto = new ThemeMoodResponseDto
         {
             BaseMoodId = baseMoodId.ToString(),
-            IconUrl = _googleStorageService.GetImageUrl(moodIcon.IconUrl),
+            IconColor = moodIcon.IconColor,
             CustomName = moodIcon.CustomName
         };
 
@@ -136,73 +145,12 @@ public class ThemeService(
         var dtos = theme.Moods.Select(m => new ThemeMoodResponseDto
         {
             BaseMoodId = m.BaseMoodId.ToString(),
-            IconUrl = _googleStorageService.GetImageUrl(m.IconUrl),
+            IconColor = m.IconColor,
             CustomName = m.CustomName
         });
 
         await _cacheService.SetAsync(cacheKey, dtos, _cacheTtl);
         return dtos;
-    }
-
-    public async Task CreateThemeAsync(string authorId, UploadThemeRequestDto request)
-    {
-        var existingTheme = await _themeRepository.GetByIdAsync(request.Id);
-        if (existingTheme != null)
-        {
-            throw new InvalidOperationException($"A theme with the ID '{request.Id}' already exists.");
-        }
-
-        string thumbnailUrl = "";
-        if (request.ThumbnailFile != null)
-        {
-            thumbnailUrl = await _googleStorageService.UploadImageAsync(
-                request.ThumbnailFile.OpenReadStream(), 
-                $"{request.Id}_thumb{Path.GetExtension(request.ThumbnailFile.FileName)}", 
-                "themes") ?? "";
-        }
-
-        string backgroundUrl = "";
-        if (request.BackgroundFile != null)
-        {
-            backgroundUrl = await _googleStorageService.UploadImageAsync(
-                request.BackgroundFile.OpenReadStream(), 
-                $"{request.Id}_bg{Path.GetExtension(request.BackgroundFile.FileName)}", 
-                "themes") ?? "";
-        }
-
-        var moods = new List<ThemeMoodIcon>();
-        foreach (var moodReq in request.Moods)
-        {
-            string iconUrl = await _googleStorageService.UploadImageAsync(
-                moodReq.IconFile.OpenReadStream(), 
-                $"{request.Id}_mood_{moodReq.BaseMoodId}{Path.GetExtension(moodReq.IconFile.FileName)}", 
-                "themes") ?? "";
-
-            moods.Add(new ThemeMoodIcon
-            {
-                BaseMoodId = moodReq.BaseMoodId,
-                IconUrl = iconUrl,
-                CustomName = moodReq.CustomName ?? ""
-            });
-        }
-
-        var newTheme = new Theme
-        {
-            Id = request.Id,
-            Name = request.Name,
-            Price = request.Price,
-            ThumbnailUrl = thumbnailUrl,
-            BackgroundUrl = backgroundUrl,
-            BackgroundDarkColor = request.BackgroundDarkColor,
-            BackgroundLightColor = request.BackgroundLightColor,
-            AuthorId = authorId,
-            IsOfficial = request.IsOfficial,
-            IsActive = request.IsActive,
-            Moods = moods
-        };
-
-        await _themeRepository.CreateThemeAsync(newTheme);
-        await ClearThemeCachesAsync(request.Id, authorId);
     }
 
     public async Task CreateThemesListAsync(string authorId, List<CreateThemeRequestDto> requests)
@@ -230,7 +178,7 @@ public class ThemeService(
                 Moods = request.Moods.Select(m => new ThemeMoodIcon
                 {
                     BaseMoodId = m.BaseMoodId,
-                    IconUrl = m.IconUrl,
+                    IconColor = m.IconColor,
                     CustomName = m.CustomName ?? ""
                 }).ToList()
             };
@@ -240,65 +188,137 @@ public class ThemeService(
         }
     }
 
-    public async Task UpdateThemeAsync(string themeId, UploadThemeRequestDto request)
+    public async Task UploadThemeAsync(string authorId, UploadThemeRequestDto request)
     {
-        var existingTheme = await _themeRepository.GetByIdAsync(themeId);
-        if (existingTheme == null)
+        var existingTheme = await _themeRepository.GetByIdAsync(request.Id);
+        if (existingTheme != null)
         {
-            throw new KeyNotFoundException($"We couldn't find a theme with the ID '{themeId}'.");
+            throw new InvalidOperationException($"A theme with the ID '{request.Id}' already exists.");
         }
 
-        string thumbnailUrl = existingTheme.ThumbnailUrl;
-        if (request.ThumbnailFile != null)
+        var newTheme = new Theme
         {
-            thumbnailUrl = await _googleStorageService.UploadImageAsync(
-                request.ThumbnailFile.OpenReadStream(), 
-                $"{themeId}_thumb{Path.GetExtension(request.ThumbnailFile.FileName)}", 
-                "themes") ?? thumbnailUrl;
-        }
-
-        string backgroundUrl = existingTheme.BackgroundUrl;
-        if (request.BackgroundFile != null)
-        {
-            backgroundUrl = await _googleStorageService.UploadImageAsync(
-                request.BackgroundFile.OpenReadStream(), 
-                $"{themeId}_bg{Path.GetExtension(request.BackgroundFile.FileName)}", 
-                "themes") ?? backgroundUrl;
-        }
-
-        var moods = new List<ThemeMoodIcon>();
-        foreach (var moodReq in request.Moods)
-        {
-            string iconUrl = await _googleStorageService.UploadImageAsync(
-                moodReq.IconFile.OpenReadStream(), 
-                $"{themeId}_mood_{moodReq.BaseMoodId}{Path.GetExtension(moodReq.IconFile.FileName)}", 
-                "themes") ?? "";
-
-            moods.Add(new ThemeMoodIcon
-            {
-                BaseMoodId = moodReq.BaseMoodId,
-                IconUrl = iconUrl,
-                CustomName = moodReq.CustomName ?? ""
-            });
-        }
-
-        var updatedTheme = new Theme
-        {
-            Id = themeId,
+            Id = request.Id,
             Name = request.Name,
             Price = request.Price,
-            ThumbnailUrl = thumbnailUrl,
-            BackgroundUrl = backgroundUrl,
-            BackgroundDarkColor = request.BackgroundDarkColor,
-            BackgroundLightColor = request.BackgroundLightColor,
-            AuthorId = existingTheme.AuthorId,
+            ThumbnailUrl = "pending",
+            BackgroundUrl = "pending",
+            BackgroundDarkColor = request.BackgroundDarkColor ?? "0xFFF4F6F1",
+            BackgroundLightColor = request.BackgroundLightColor ?? "0xFF1C1C1C",
+            AuthorId = authorId,
             IsOfficial = request.IsOfficial,
             IsActive = request.IsActive,
-            Moods = moods
+            Moods = DeserializeMoods(request.Moods)
         };
 
-        await _themeRepository.UpdateThemeAsync(updatedTheme);
-        await ClearThemeCachesAsync(themeId, existingTheme.AuthorId);
+        await _themeRepository.CreateThemeAsync(newTheme);
+
+        if (request.Thumbnail != null)
+        {
+            await SendImageToQueue(authorId, request.Id, request.Thumbnail, ImageUploadType.ThemeThumbnail);
+        }
+
+        if (request.Background != null)
+        {
+            await SendImageToQueue(authorId, request.Id, request.Background, ImageUploadType.ThemeBackground);
+        }
+
+        await ClearThemeCachesAsync(request.Id, authorId);
+    }
+
+    private async Task SendImageToQueue(string userId, string themeId, IFormFile file, ImageUploadType uploadType)
+    {
+        var tempFolder = Path.Combine(Path.GetTempPath(), "moonpage_temp_images");
+        if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
+
+        var fileName = $"{themeId}_{uploadType}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        var tempFilePath = Path.Combine(tempFolder, fileName);
+
+        using (var stream = new FileStream(tempFilePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var payload = new ImageUploadPayload
+        {
+            UserId = userId,
+            EntityId = themeId,
+            UploadType = uploadType,
+            TempImagePath = tempFilePath
+        };
+
+        await _messageProducer.SendMessageAsync(payload, "image_upload_queue");
+    }
+
+    public async Task UpdateImageUrlAsync(string themeId, string imageUrl, bool isThumbnail)
+    {
+        var theme = await _themeRepository.GetByIdAsync(themeId);
+        if (theme == null) return;
+
+        if (isThumbnail) theme.ThumbnailUrl = imageUrl;
+        else theme.BackgroundUrl = imageUrl;
+
+        await _themeRepository.UpdateThemeAsync(theme);
+        await ClearThemeCachesAsync(themeId, theme.AuthorId);
+    }
+
+    public async Task UpdateThemeAsync(string authorId, UploadThemeRequestDto request)
+    {
+        var theme = await _themeRepository.GetByIdAsync(request.Id);
+        if (theme == null)
+        {
+            throw new KeyNotFoundException($"Theme with ID '{request.Id}' not found.");
+        }
+
+        theme.Name = request.Name;
+        theme.Price = request.Price;
+        if (!string.IsNullOrEmpty(request.BackgroundDarkColor)) theme.BackgroundDarkColor = request.BackgroundDarkColor;
+        if (!string.IsNullOrEmpty(request.BackgroundLightColor)) theme.BackgroundLightColor = request.BackgroundLightColor;
+        theme.IsOfficial = request.IsOfficial;
+        theme.IsActive = request.IsActive;
+
+        if (request.Thumbnail != null)
+        {
+            await SendImageToQueue(authorId, request.Id, request.Thumbnail, ImageUploadType.ThemeThumbnail);
+        }
+
+        if (request.Background != null)
+        {
+            await SendImageToQueue(authorId, request.Id, request.Background, ImageUploadType.ThemeBackground);
+        }
+
+        if (!string.IsNullOrEmpty(request.Moods))
+        {
+            theme.Moods = DeserializeMoods(request.Moods);
+        }
+
+        await _themeRepository.UpdateThemeAsync(theme);
+        await ClearThemeCachesAsync(request.Id, theme.AuthorId);
+    }
+
+    private List<ThemeMoodIcon> DeserializeMoods(string? moodsJson)
+    {
+        if (string.IsNullOrEmpty(moodsJson)) return new List<ThemeMoodIcon>();
+        try
+        {
+            var options = new System.Text.Json.JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true
+            };
+            options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+            
+            var dtos = System.Text.Json.JsonSerializer.Deserialize<List<UploadThemeMoodDto>>(moodsJson, options);
+            return dtos?.Select(m => new ThemeMoodIcon
+            {
+                BaseMoodId = m.BaseMoodId,
+                IconColor = m.IconColor,
+                CustomName = m.CustomName ?? ""
+            }).ToList() ?? new List<ThemeMoodIcon>();
+        }
+        catch (Exception ex)
+        {
+            return new List<ThemeMoodIcon>();
+        }
     }
 
     public async Task DeleteThemeAsync(string themeId)

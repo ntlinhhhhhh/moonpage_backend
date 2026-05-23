@@ -16,7 +16,6 @@ public class Theme
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
 
-    // List 5 icon of theme
     public List<ThemeMoodIcon> Moods { get; set; } = new();
 }
 
@@ -24,5 +23,5 @@ public class ThemeMoodIcon
 {
     public BaseMood BaseMoodId { get; set; } // from 1 to 5
     public required string CustomName { get; set; } // name of icon from 1 to 5
-    public required string IconUrl { get; set; }
+    public required string IconColor { get; set; }
 }

@@ -2,7 +2,9 @@ public enum ImageUploadType
 {
     Avatar,
     DailyLog,
-    Moment
+    Moment,
+    ThemeThumbnail,
+    ThemeBackground
 }
 
 public class ImageUploadPayload

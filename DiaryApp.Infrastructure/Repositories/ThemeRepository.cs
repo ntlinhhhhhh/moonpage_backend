@@ -88,8 +88,8 @@ public class ThemeRepository : IThemeRepository
             { "IsActive", theme.IsActive },
             { "Moods", theme.Moods.Select(m => new Dictionary<string, object>
                 {
-                    { "BaseMoodId", m.BaseMoodId },
-                    { "IconUrl", m.IconUrl },
+                    { "BaseMoodId", (int)m.BaseMoodId },
+                    { "IconColor", m.IconColor },
                     { "CustomName", m.CustomName ?? "" }
                 }).ToList() 
             }
@@ -118,7 +118,9 @@ public class ThemeRepository : IThemeRepository
             var moodsData = snapshot.GetValue<List<object>>("Moods");
             foreach (var item in moodsData)
             {
-                var dict = (Dictionary<string, object>)item;
+                var dict = item as IDictionary<string, object>;
+                if (dict == null) continue;
+
                 int baseMoodId = 0;
                 if (dict.TryGetValue("BaseMoodId", out var moodIdObj))
                 {
@@ -128,7 +130,7 @@ public class ThemeRepository : IThemeRepository
                 theme.Moods.Add(new ThemeMoodIcon
                 {
                     BaseMoodId = (BaseMood)baseMoodId,
-                    IconUrl = dict.TryGetValue("IconUrl", out var iconObj) ? iconObj.ToString() ?? "" : "",
+                    IconColor = dict.TryGetValue("IconColor", out var iconObj) ? iconObj.ToString() ?? "" : "",
                     CustomName = dict.TryGetValue("CustomName", out var nameObj) ? nameObj.ToString() ?? "" : ""
                 });
             }

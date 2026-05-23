@@ -86,37 +86,6 @@ public class ThemeController(IThemeService themeService) : ControllerBase
         }
     }
 
-    // POST: /api/themes (Upload)
-    [HttpPost]
-    public async Task<IActionResult> CreateTheme([FromForm] UploadThemeRequestDto request)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        try
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var role = User.FindFirstValue(ClaimTypes.Role);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
-            if (request.IsOfficial && role != "Admin")
-            {
-                return Forbid();
-            }
-
-            await _themeService.CreateThemeAsync(userId, request);
-            
-            return Ok(new { message = "Theme created successfully!!" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Server error: " + ex.Message }); 
-        }
-    }
-
     // POST: /api/themes/list (Admin Only)
     [Authorize(Roles = "Admin")]
     [HttpPost("list")]
@@ -143,32 +112,47 @@ public class ThemeController(IThemeService themeService) : ControllerBase
         }
     }
 
-    // PUT: /api/themes/{id}
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateTheme(string id, [FromForm] UploadThemeRequestDto request)
+    // POST: /api/themes/upload (Admin Only)
+    [HttpPost("upload")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadTheme([FromForm] UploadThemeRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var role = User.FindFirstValue(ClaimTypes.Role);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            var existingTheme = await _themeService.GetThemeByIdAsync(id);
-            if (existingTheme == null) return NotFound(new { message = "Theme not found." });
+            await _themeService.UploadThemeAsync(userId, request);
+            
+            return Ok(new { message = "Theme uploaded and created successfully!" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Server error: " + ex.Message }); 
+        }
+    }
 
-            // Only author or admin can update
-            if (existingTheme.AuthorId != userId && role != "Admin")
-            {
-                return Forbid();
-            }
+    // PUT: /api/themes/{id}
+    [HttpPut("{id}")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateTheme(string id, [FromForm] UploadThemeRequestDto request)
+    {
+        if (id != request.Id) return BadRequest(new { message = "Theme ID mismatch." });
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            if (request.IsOfficial && role != "Admin")
-            {
-                return Forbid();
-            }
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            await _themeService.UpdateThemeAsync(id, request);
+            await _themeService.UpdateThemeAsync(userId, request);
+            
             return Ok(new { message = "Theme updated successfully!" });
         }
         catch (KeyNotFoundException ex)

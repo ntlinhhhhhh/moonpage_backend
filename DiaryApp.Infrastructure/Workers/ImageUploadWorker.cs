@@ -91,6 +91,8 @@ public class ImageUploadWorker : BackgroundService
                             ImageUploadType.DailyLog => "dailylogs",
                             ImageUploadType.Avatar => "avatars",
                             ImageUploadType.Moment => "moments",
+                            ImageUploadType.ThemeThumbnail => "themes",
+                            ImageUploadType.ThemeBackground => "themes",
                             _ => "others"
                         };
 
@@ -112,6 +114,12 @@ public class ImageUploadWorker : BackgroundService
                             {
                                 var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
                                 await userService.UpdateAvatarUrlAsync(data.UserId, imageUrl);
+                            }
+                            else if (data.UploadType == ImageUploadType.ThemeThumbnail || data.UploadType == ImageUploadType.ThemeBackground)
+                            {
+                                var themeService = scope.ServiceProvider.GetRequiredService<IThemeService>();
+                                bool isThumbnail = data.UploadType == ImageUploadType.ThemeThumbnail;
+                                await themeService.UpdateImageUrlAsync(data.EntityId, imageUrl, isThumbnail);
                             }
                         }
 
