@@ -10,6 +10,8 @@ public class Theme
     public int Price { get; set; } = 0;
     public required string ThumbnailUrl { get; set; }
     public required string BackgroundUrl { get; set; }
+    public string BackgroundDarkColor { get; set; } = "0xFFF4F6F1";
+    public string BackgroundLightColor { get; set; } = "0xFF1C1C1C";
     public string AuthorId { get; set; } = string.Empty;
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
