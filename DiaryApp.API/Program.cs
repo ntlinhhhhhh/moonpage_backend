@@ -145,7 +145,7 @@ builder.Services.AddScoped<IAppNotificationRepository, AppNotificationRepository
 builder.Services.AddScoped<IStatisticsRepository, StatisticsRepository>();
 builder.Services.AddHttpClient<IGoogleStorageService, GoogleStorageService>();
 builder.Services.AddScoped<IUserStreakRepository, UserStreakRepository>();
-builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
+builder.Services.AddSingleton<IRedisCacheService, RedisCacheService>();
 builder.Services.AddScoped<IMessageProducer, RabbitMQProducer>();
 builder.Services.AddHostedService<ImageUploadWorker>();
 builder.Services.AddHostedService<DatabaseTaskWorker>();
