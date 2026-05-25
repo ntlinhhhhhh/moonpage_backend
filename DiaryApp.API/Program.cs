@@ -20,6 +20,9 @@ using Google.Api.Gax;
 using DiaryApp.API.Middlewares;
 using DiaryApp.Application.Interfaces.Repositories;
 
+// Load environment variables from .env file
+DotNetEnv.Env.Load();
+
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);

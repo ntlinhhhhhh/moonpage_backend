@@ -1401,39 +1401,45 @@ GET /api/themes/:id/moods
 
 - [200 OK] - List of mood icons.
 
-## Create theme (Upload)
+## Create theme (Upload - Admin Only)
 
 - Endpoint:
 
 ```text
-POST /api/themes
+POST /api/themes/upload
 ```
 
-- Description: Creates a new theme by uploading image files. Accessible to all users. Official themes can only be created by Admins by setting `isOfficial` to true.
-- Auth required: Yes
+- Description: Creates a new theme by uploading image files. Images are processed asynchronously.
+- Auth required: Yes (Role: Admin)
 
 ### Request body (multipart/form-data):
 
-- id (string, Required): Unique theme ID.
-- name (string, Required)
-- price (int, Required)
-- ThumbnailFile (File, Optional): Thumbnail image.
-- BackgroundFile (File, Optional): Background image.
-- backgroundDarkColor (string, Optional)
-- backgroundLightColor (string, Optional)
-- isOfficial (bool, Optional): Set to true for store themes, false for personal. Only Admins can set this to true.
-- isActive (bool, Optional): Default is true.
-- Moods[i].BaseMoodId (int, Required): Mood ID (1-5).
-- Moods[i].IconFile (File, Required): Icon image for the mood.
-- Moods[i].CustomName (string, Optional): Custom name for the mood.
+- Id (string, Required): Unique theme ID.
+- Name (string, Required)
+- Price (int, Required)
+- Thumbnail (File, Optional): Thumbnail image file.
+- Background (File, Optional): Background image file.
+- BackgroundDarkColor (string, Optional): Hex color (e.g., "0xFFF4F6F1").
+- BackgroundLightColor (string, Optional): Hex color (e.g., "0xFF1C1C1C").
+- IsOfficial (bool, Optional): Default is false.
+- IsActive (bool, Optional): Default is true.
+- Moods (string, Optional): A JSON string representing a list of mood icons.
+
+Example `Moods` JSON:
+```json
+[
+  { "BaseMoodId": 5, "IconColor": "#FF5733", "CustomName": "Rad" },
+  { "BaseMoodId": 1, "IconColor": "#000000" }
+]
+```
 
 ### Responses:
 
-- [200 OK] - Theme created successfully.
+- [200 OK] - Theme created and images are being processed.
 
 ```json
 {
-  "message": "Theme created successfully!!"
+  "message": "Theme uploaded and created successfully!"
 }
 ```
 
@@ -1445,12 +1451,12 @@ POST /api/themes
 POST /api/themes/list
 ```
 
-- Description: Creates multiple new themes using existing image URLs. Accessible only by Admins.
+- Description: Creates multiple new themes using existing image URLs.
 - Auth required: Yes (Role: Admin)
 
 ### Request body (application/json):
 
-- An array of theme objects, each containing:
+- An array of theme objects:
   - id (string, Required)
   - name (string, Required)
   - price (int, Required)
@@ -1460,7 +1466,7 @@ POST /api/themes/list
   - backgroundLightColor (string, Optional)
   - isOfficial (bool, Optional)
   - isActive (bool, Optional)
-  - moods (array, Required): List of mood icon objects (`baseMoodId`, `iconUrl`, `customName`).
+  - moods (array, Required): List of objects (`baseMoodId`, `iconColor`, `customName`).
 
 ```json
 [
@@ -1469,10 +1475,10 @@ POST /api/themes/list
     "name": "Summer Vibe",
     "price": 300,
     "isOfficial": true,
-    "thumbnailUrl": "https://...",
-    "backgroundUrl": "https://...",
+    "thumbnailUrl": "themes/summer_thumb.png",
+    "backgroundUrl": "themes/summer_bg.png",
     "moods": [
-      { "baseMoodId": 5, "iconUrl": "https://...", "customName": "Sunshine" }
+      { "baseMoodId": 5, "iconColor": "#FFD700", "customName": "Sunshine" }
     ]
   }
 ]
@@ -1482,12 +1488,6 @@ POST /api/themes/list
 
 - [200 OK] - Themes created successfully.
 
-```json
-{
-  "message": "1 themes created successfully!!"
-}
-```
-
 ## Update theme
 
 - Endpoint:
@@ -1496,12 +1496,12 @@ POST /api/themes/list
 PUT /api/themes/:id
 ```
 
-- Description: Updates an existing theme by uploading new image files. Only the author or an Admin can perform this action.
+- Description: Updates an existing theme. Supports partial updates and asynchronous image processing.
 - Auth required: Yes
 
 ### Request body (multipart/form-data):
 
-- Same as Create Theme (Upload).
+- Same as Create Theme (Upload). All fields except `Id` are effectively optional for partial update.
 
 ### Responses:
 
