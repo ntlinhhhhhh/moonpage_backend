@@ -15,7 +15,9 @@ public class DailyLogRequestDto
     public int? Steps { get; set; }
     public int? Calories { get; set; }
     public double? Distance { get; set; }
-    public string? MusicRecord { get; set; }
+    public string? MusicTitle { get; set; }
+    public string? ArtistName { get; set; }
+    public string? AlbumArtUrl { get; set; }
     public List<IFormFile> DailyPhotos { get; set; } = new();
     public List<string> ActivityIds { get; set; } = new();
 }

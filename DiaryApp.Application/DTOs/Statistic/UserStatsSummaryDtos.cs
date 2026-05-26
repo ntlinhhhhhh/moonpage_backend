@@ -27,7 +27,14 @@ public class UserStatsSummaryDto
     public string? AverageSleepStartTime { get; set; }
     public string? AverageWakeupTime { get; set; }
     public List<SleepDataDto> SleepAnalysis { get; set; } = new();
-    public List<string> MusicSummary { get; set; } = new();
+    public List<MusicLogDto> MusicSummary { get; set; } = new();
+}
+
+public class MusicLogDto
+{
+    public string? MusicTitle { get; set; }
+    public string? ArtistName { get; set; }
+    public string? AlbumArtUrl { get; set; }
 }
 
 public class SleepDataDto

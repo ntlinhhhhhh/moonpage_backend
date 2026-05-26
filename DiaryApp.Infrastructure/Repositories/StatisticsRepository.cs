@@ -86,8 +86,14 @@ public class StatisticsRepository : IStatisticsRepository
             if (data.TryGetValue("Distance", out var distanceObj) && distanceObj != null)
                 log.Distance = Convert.ToDouble(distanceObj);
 
-            if (data.TryGetValue("MusicRecord", out var musicObj) && musicObj != null)
-                log.MusicRecord = musicObj.ToString();
+            if (data.TryGetValue("MusicTitle", out var titleObj) && titleObj != null)
+                log.MusicTitle = titleObj.ToString();
+            
+            if (data.TryGetValue("ArtistName", out var artistObj) && artistObj != null)
+                log.ArtistName = artistObj.ToString();
+            
+            if (data.TryGetValue("AlbumArtUrl", out var albumObj) && albumObj != null)
+                log.AlbumArtUrl = albumObj.ToString();
 
             logs.Add(log);
         }

@@ -16,7 +16,9 @@ public class DailyLog
     public int Steps { get; set; } = 0;
     public int Calories { get; set; } = 0;
     public double Distance { get; set; } = 0;
-    public string? MusicRecord { get; set; }
+    public string? MusicTitle { get; set; }
+    public string? ArtistName { get; set; }
+    public string? AlbumArtUrl { get; set; }
     public string? Note { get; set; }
     public string Date { get; set; } = string.Empty;
     public required string YearMonth { get; set; }

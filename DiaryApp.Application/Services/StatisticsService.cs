@@ -114,9 +114,12 @@ public class StatisticsService(
                         Duration = l.SleepHours,
                         MoodId = l.BaseMoodId
                     }).ToList(),
-                MusicSummary = logs.Where(l => !string.IsNullOrEmpty(l.MusicRecord))
-                    .Select(l => l.MusicRecord!)
-                    .ToList()
+                MusicSummary = logs.Where(l => !string.IsNullOrEmpty(l.MusicTitle))
+                    .Select(l => new MusicLogDto {
+                        MusicTitle = l.MusicTitle,
+                        ArtistName = l.ArtistName,
+                        AlbumArtUrl = l.AlbumArtUrl
+                    }).ToList()
             };
 
             // Calculate Average Sleep Start Time

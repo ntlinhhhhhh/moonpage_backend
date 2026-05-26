@@ -697,7 +697,9 @@ POST /api/dailylogs
 - Steps (int, Optional).
 - Calories (int, Optional).
 - Distance (double, Optional).
-- MusicRecord (string, Optional).
+- MusicTitle (string, Optional).
+- ArtistName (string, Optional).
+- AlbumArtUrl (string, Optional).
 - DailyPhotos (Files, Optional): Multiple image files.
 - ActivityIds (strings, Optional): List of activity IDs.
 
@@ -740,7 +742,9 @@ GET /api/dailylogs/date/:date
   "steps": 10000,
   "calories": 500,
   "distance": 5.5,
-  "musicRecord": "Classical",
+  "musicTitle": "Song Title",
+  "artistName": "Artist Name",
+  "albumArtUrl": "https://...",
   "dailyPhotos": ["https://storage.../image1.jpg"],
   "activityIds": ["act_sport", "act_reading"],
   "createdAt": "2024-04-20T10:00:00Z"
@@ -777,7 +781,9 @@ GET /api/dailylogs/month/:yearMonth
     "steps": 8000,
     "calories": 400,
     "distance": 4.5,
-    "musicRecord": "",
+    "musicTitle": "",
+    "artistName": "",
+    "albumArtUrl": "",
     "dailyPhotos": [],
     "activityIds": [],
     "createdAt": "..."
@@ -1201,7 +1207,9 @@ GET /api/statistics/summary
       "moodId": 4
     }
   ],
-  "musicSummary": ["Classical", "Lo-fi"]
+  "musicSummary": [
+    { "musicTitle": "Song Title", "artistName": "Artist Name", "albumArtUrl": "https://..." }
+  ]
 }
 ```
 
