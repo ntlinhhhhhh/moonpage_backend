@@ -9,6 +9,8 @@ public class ThemeResponseDto
     public string? BackgroundUrl { get; set; }
     public string BackgroundDarkColor { get; set; } = string.Empty;
     public string BackgroundLightColor { get; set; } = string.Empty;
+    public string PrimaryDarkColor { get; set; } = string.Empty;
+    public string PrimaryLightColor { get; set; } = string.Empty;
     public string AuthorId { get; set; } = string.Empty;
     public bool IsOfficial { get; set; }
 

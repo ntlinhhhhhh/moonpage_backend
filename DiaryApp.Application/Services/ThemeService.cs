@@ -43,6 +43,8 @@ public class ThemeService(
             BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
             BackgroundDarkColor = theme.BackgroundDarkColor,
             BackgroundLightColor = theme.BackgroundLightColor,
+            PrimaryDarkColor = theme.PrimaryDarkColor,
+            PrimaryLightColor = theme.PrimaryLightColor,
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         });
@@ -70,6 +72,8 @@ public class ThemeService(
             BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
             BackgroundDarkColor = theme.BackgroundDarkColor,
             BackgroundLightColor = theme.BackgroundLightColor,
+            PrimaryDarkColor = theme.PrimaryDarkColor,
+            PrimaryLightColor = theme.PrimaryLightColor,
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         });
@@ -100,6 +104,8 @@ public class ThemeService(
             BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
             BackgroundDarkColor = theme.BackgroundDarkColor,
             BackgroundLightColor = theme.BackgroundLightColor,
+            PrimaryDarkColor = theme.PrimaryDarkColor,
+            PrimaryLightColor = theme.PrimaryLightColor,
             AuthorId = theme.AuthorId,
             IsOfficial = theme.IsOfficial
         };
@@ -172,6 +178,8 @@ public class ThemeService(
                 BackgroundUrl = request.BackgroundUrl ?? "",
                 BackgroundDarkColor = request.BackgroundDarkColor,
                 BackgroundLightColor = request.BackgroundLightColor,
+                PrimaryDarkColor = request.PrimaryDarkColor,
+                PrimaryLightColor = request.PrimaryLightColor,
                 AuthorId = authorId,
                 IsOfficial = request.IsOfficial,
                 IsActive = request.IsActive,
@@ -205,6 +213,8 @@ public class ThemeService(
             BackgroundUrl = "pending",
             BackgroundDarkColor = request.BackgroundDarkColor ?? "0xFFF4F6F1",
             BackgroundLightColor = request.BackgroundLightColor ?? "0xFF1C1C1C",
+            PrimaryDarkColor = request.PrimaryDarkColor ?? "0xFFF4F6F1",
+            PrimaryLightColor = request.PrimaryLightColor ?? "0xFF1C1C1C",
             AuthorId = authorId,
             IsOfficial = request.IsOfficial,
             IsActive = request.IsActive,
@@ -274,6 +284,8 @@ public class ThemeService(
         theme.Price = request.Price;
         if (!string.IsNullOrEmpty(request.BackgroundDarkColor)) theme.BackgroundDarkColor = request.BackgroundDarkColor;
         if (!string.IsNullOrEmpty(request.BackgroundLightColor)) theme.BackgroundLightColor = request.BackgroundLightColor;
+        if (!string.IsNullOrEmpty(request.PrimaryDarkColor)) theme.PrimaryDarkColor = request.PrimaryDarkColor;
+        if (!string.IsNullOrEmpty(request.PrimaryLightColor)) theme.PrimaryLightColor = request.PrimaryLightColor;
         theme.IsOfficial = request.IsOfficial;
         theme.IsActive = request.IsActive;
 

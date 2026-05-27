@@ -33,6 +33,8 @@ public class UploadThemeRequestDto
 
     public string? BackgroundDarkColor { get; set; }
     public string? BackgroundLightColor { get; set; }
+    public string? PrimaryDarkColor { get; set; }
+    public string? PrimaryLightColor { get; set; }
 
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;

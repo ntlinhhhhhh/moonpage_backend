@@ -30,6 +30,8 @@ public class CreateThemeRequestDto
     public string? BackgroundUrl { get; set; }
     public string BackgroundDarkColor { get; set; } = "0xFFF4F6F1";
     public string BackgroundLightColor { get; set; } = "0xFF1C1C1C";
+    public string PrimaryDarkColor { get; set; } = "0xFFF4F6F1";
+    public string PrimaryLightColor { get; set; } = "0xFF1C1C1C";
 
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
