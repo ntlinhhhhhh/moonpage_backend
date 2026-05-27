@@ -15,6 +15,8 @@ public class UserStatsSummaryDto
     
     // Top activity
     public List<ActivityInfluenceDto> BestActivities { get; set; } = new();
+    public List<ActivityInfluenceDto> WorstActivities { get; set; } = new();
+    public List<ActivityInfluenceDto> PerformedActivities { get; set; } = new();
 
     // New stats
     public int TotalSteps { get; set; }

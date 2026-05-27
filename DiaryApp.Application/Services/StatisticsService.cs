@@ -94,7 +94,9 @@ public class StatisticsService(
                     Date = l.Date, 
                     MoodId = l.BaseMoodId!.Value 
                 }).ToList(),
-                BestActivities = influences.OrderByDescending(x => x.AverageMoodScore).Take(5).ToList(),
+                BestActivities = influences.OrderByDescending(x => x.AverageMoodScore).Take(10).ToList(),
+                WorstActivities = influences.OrderBy(x => x.AverageMoodScore).Take(10).ToList(),
+                PerformedActivities = influences.OrderByDescending(x => x.Occurrence).ToList(),
 
                 // New stats calculation
                 TotalSteps = logs.Sum(l => l.Steps),
