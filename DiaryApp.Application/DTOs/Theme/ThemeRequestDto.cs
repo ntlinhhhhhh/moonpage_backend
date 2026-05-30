@@ -35,6 +35,7 @@ public class CreateThemeRequestDto
 
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
+    public object? Description { get; set; }
 
     public List<CreateThemeMoodDto> Moods { get; set; } = new();
 }

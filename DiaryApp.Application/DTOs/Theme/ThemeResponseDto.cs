@@ -13,5 +13,6 @@ public class ThemeResponseDto
     public string PrimaryLightColor { get; set; } = string.Empty;
     public string AuthorId { get; set; } = string.Empty;
     public bool IsOfficial { get; set; }
-
+    public object? Description { get; set; }
+    public List<ThemeMoodResponseDto> Moods { get; set; } = new();
 }

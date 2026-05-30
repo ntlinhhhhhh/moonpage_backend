@@ -39,5 +39,6 @@ public class UploadThemeRequestDto
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
 
+    public string? Description { get; set; }
     public string? Moods { get; set; } 
 }

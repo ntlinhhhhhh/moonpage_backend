@@ -17,6 +17,7 @@ public class Theme
     public string AuthorId { get; set; } = string.Empty;
     public bool IsOfficial { get; set; } = false;
     public bool IsActive { get; set; } = true;
+    public string? Description { get; set; }
 
     public List<ThemeMoodIcon> Moods { get; set; } = new();
 }

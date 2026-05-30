@@ -12,9 +12,9 @@ public interface IThemeService
     Task<ThemeResponseDto?> GetThemeByIdAsync(string themeId);
     Task<IEnumerable<ThemeMoodResponseDto>> GetThemeMoodsAsync(string themeId);
     Task<ThemeMoodResponseDto?> GetMoodIconAsync(string themeId, BaseMood baseMoodId);
-    Task CreateThemesListAsync(string authorId, List<CreateThemeRequestDto> requests);
-    Task UploadThemeAsync(string authorId, UploadThemeRequestDto request);
-    Task UpdateThemeAsync(string authorId, UploadThemeRequestDto request);
+    Task CreateThemesListAsync(string authorId, bool isAdmin, List<CreateThemeRequestDto> requests);
+    Task UploadThemeAsync(string authorId, bool isAdmin, UploadThemeRequestDto request);
+    Task UpdateThemeAsync(string authorId, bool isAdmin, UploadThemeRequestDto request);
     Task UpdateImageUrlAsync(string themeId, string imageUrl, bool isThumbnail);
     Task DeleteThemeAsync(string themeId);
 

@@ -34,20 +34,7 @@ public class ThemeService(
 
         var themes = await _themeRepository.GetAllActiveThemesAsync();
 
-        var dtos = themes.Select(theme => new ThemeResponseDto()
-        {
-            Id = theme.Id,
-            Name = theme.Name,
-            Price = theme.Price,
-            ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
-            BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
-            BackgroundDarkColor = theme.BackgroundDarkColor,
-            BackgroundLightColor = theme.BackgroundLightColor,
-            PrimaryDarkColor = theme.PrimaryDarkColor,
-            PrimaryLightColor = theme.PrimaryLightColor,
-            AuthorId = theme.AuthorId,
-            IsOfficial = theme.IsOfficial
-        });
+        var dtos = themes.Select(MapToResponseDto).ToList();
 
         await _cacheService.SetAsync(cacheKey, dtos, _cacheTtl);
 
@@ -63,20 +50,7 @@ public class ThemeService(
 
         var themes = await _themeRepository.GetThemesByAuthorIdAsync(authorId);
 
-        var dtos = themes.Select(theme => new ThemeResponseDto()
-        {
-            Id = theme.Id,
-            Name = theme.Name,
-            Price = theme.Price,
-            ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
-            BackgroundUrl = _googleStorageService.GetImageUrl(theme.BackgroundUrl ?? ""),
-            BackgroundDarkColor = theme.BackgroundDarkColor,
-            BackgroundLightColor = theme.BackgroundLightColor,
-            PrimaryDarkColor = theme.PrimaryDarkColor,
-            PrimaryLightColor = theme.PrimaryLightColor,
-            AuthorId = theme.AuthorId,
-            IsOfficial = theme.IsOfficial
-        });
+        var dtos = themes.Select(MapToResponseDto).ToList();
 
         await _cacheService.SetAsync(cacheKey, dtos, _cacheTtl);
 
@@ -95,9 +69,17 @@ public class ThemeService(
         {
             return null;
         }
-        var dto = new ThemeResponseDto
+        var dto = MapToResponseDto(theme);
+
+        await _cacheService.SetAsync(cacheKey, dto, _cacheTtl);
+        return dto;
+    }
+
+    private ThemeResponseDto MapToResponseDto(Theme theme)
+    {
+        return new ThemeResponseDto
         {
-            Id = themeId,
+            Id = theme.Id,
             Name = theme.Name,
             Price = theme.Price,
             ThumbnailUrl = _googleStorageService.GetImageUrl(theme.ThumbnailUrl ?? ""),
@@ -107,11 +89,28 @@ public class ThemeService(
             PrimaryDarkColor = theme.PrimaryDarkColor,
             PrimaryLightColor = theme.PrimaryLightColor,
             AuthorId = theme.AuthorId,
-            IsOfficial = theme.IsOfficial
+            IsOfficial = theme.IsOfficial,
+            Description = DeserializeDescription(theme.Description),
+            Moods = theme.Moods?.Select(m => new ThemeMoodResponseDto
+            {
+                BaseMoodId = (int)m.BaseMoodId,
+                IconColor = m.IconColor,
+                CustomName = m.CustomName
+            }).ToList() ?? new List<ThemeMoodResponseDto>()
         };
+    }
 
-        await _cacheService.SetAsync(cacheKey, dto, _cacheTtl);
-        return dto;
+    private object? DeserializeDescription(string? description)
+    {
+        if (string.IsNullOrEmpty(description)) return null;
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<object>(description);
+        }
+        catch
+        {
+            return description; // Return as string if not valid JSON
+        }
     }
     
     public async Task<ThemeMoodResponseDto?> GetMoodIconAsync(string themeId, BaseMood baseMoodId)
@@ -127,7 +126,7 @@ public class ThemeService(
 
         var dto = new ThemeMoodResponseDto
         {
-            BaseMoodId = baseMoodId.ToString(),
+            BaseMoodId = (int)baseMoodId,
             IconColor = moodIcon.IconColor,
             CustomName = moodIcon.CustomName
         };
@@ -150,7 +149,7 @@ public class ThemeService(
 
         var dtos = theme.Moods.Select(m => new ThemeMoodResponseDto
         {
-            BaseMoodId = m.BaseMoodId.ToString(),
+            BaseMoodId = (int)m.BaseMoodId,
             IconColor = m.IconColor,
             CustomName = m.CustomName
         });
@@ -159,7 +158,7 @@ public class ThemeService(
         return dtos;
     }
 
-    public async Task CreateThemesListAsync(string authorId, List<CreateThemeRequestDto> requests)
+    public async Task CreateThemesListAsync(string authorId, bool isAdmin, List<CreateThemeRequestDto> requests)
     {
         foreach (var request in requests)
         {
@@ -181,8 +180,9 @@ public class ThemeService(
                 PrimaryDarkColor = request.PrimaryDarkColor,
                 PrimaryLightColor = request.PrimaryLightColor,
                 AuthorId = authorId,
-                IsOfficial = request.IsOfficial,
+                IsOfficial = isAdmin ? request.IsOfficial : false,
                 IsActive = request.IsActive,
+                Description = SerializeDescription(request.Description),
                 Moods = request.Moods.Select(m => new ThemeMoodIcon
                 {
                     BaseMoodId = m.BaseMoodId,
@@ -196,7 +196,7 @@ public class ThemeService(
         }
     }
 
-    public async Task UploadThemeAsync(string authorId, UploadThemeRequestDto request)
+    public async Task UploadThemeAsync(string authorId, bool isAdmin, UploadThemeRequestDto request)
     {
         var existingTheme = await _themeRepository.GetByIdAsync(request.Id);
         if (existingTheme != null)
@@ -216,8 +216,9 @@ public class ThemeService(
             PrimaryDarkColor = request.PrimaryDarkColor ?? "0xFFF4F6F1",
             PrimaryLightColor = request.PrimaryLightColor ?? "0xFF1C1C1C",
             AuthorId = authorId,
-            IsOfficial = request.IsOfficial,
+            IsOfficial = isAdmin ? request.IsOfficial : false,
             IsActive = request.IsActive,
+            Description = request.Description, // Already a string from form-data
             Moods = DeserializeMoods(request.Moods)
         };
 
@@ -260,6 +261,13 @@ public class ThemeService(
         await _messageProducer.SendMessageAsync(payload, "image_upload_queue");
     }
 
+    private string? SerializeDescription(object? description)
+    {
+        if (description == null) return null;
+        if (description is string s) return s;
+        return System.Text.Json.JsonSerializer.Serialize(description);
+    }
+
     public async Task UpdateImageUrlAsync(string themeId, string imageUrl, bool isThumbnail)
     {
         var theme = await _themeRepository.GetByIdAsync(themeId);
@@ -272,12 +280,18 @@ public class ThemeService(
         await ClearThemeCachesAsync(themeId, theme.AuthorId);
     }
 
-    public async Task UpdateThemeAsync(string authorId, UploadThemeRequestDto request)
+    public async Task UpdateThemeAsync(string authorId, bool isAdmin, UploadThemeRequestDto request)
     {
         var theme = await _themeRepository.GetByIdAsync(request.Id);
         if (theme == null)
         {
             throw new KeyNotFoundException($"Theme with ID '{request.Id}' not found.");
+        }
+
+        // Security check: Only author or admin can update
+        if (!isAdmin && theme.AuthorId != authorId)
+        {
+            throw new UnauthorizedAccessException("You are not authorized to update this theme.");
         }
 
         theme.Name = request.Name;
@@ -286,8 +300,14 @@ public class ThemeService(
         if (!string.IsNullOrEmpty(request.BackgroundLightColor)) theme.BackgroundLightColor = request.BackgroundLightColor;
         if (!string.IsNullOrEmpty(request.PrimaryDarkColor)) theme.PrimaryDarkColor = request.PrimaryDarkColor;
         if (!string.IsNullOrEmpty(request.PrimaryLightColor)) theme.PrimaryLightColor = request.PrimaryLightColor;
-        theme.IsOfficial = request.IsOfficial;
+        
+        if (isAdmin)
+        {
+            theme.IsOfficial = request.IsOfficial;
+        }
+        
         theme.IsActive = request.IsActive;
+        theme.Description = request.Description;
 
         if (request.Thumbnail != null)
         {

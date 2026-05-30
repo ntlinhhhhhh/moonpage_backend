@@ -88,6 +88,7 @@ public class ThemeRepository : IThemeRepository
             { "AuthorId", theme.AuthorId },
             { "IsOfficial", theme.IsOfficial },
             { "IsActive", theme.IsActive },
+            { "Description", theme.Description ?? string.Empty },
             { "Moods", theme.Moods.Select(m => new Dictionary<string, object>
                 {
                     { "BaseMoodId", (int)m.BaseMoodId },
@@ -114,6 +115,7 @@ public class ThemeRepository : IThemeRepository
             AuthorId = snapshot.ContainsField("AuthorId") ? snapshot.GetValue<string>("AuthorId") : string.Empty,
             IsOfficial = snapshot.ContainsField("IsOfficial") ? snapshot.GetValue<bool>("IsOfficial") : false,
             IsActive = snapshot.GetValue<bool>("IsActive"),
+            Description = snapshot.ContainsField("Description") ? snapshot.GetValue<string>("Description") : string.Empty,
             Moods = new List<ThemeMoodIcon>()
         };
 

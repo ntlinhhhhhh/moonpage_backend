@@ -86,8 +86,7 @@ public class ThemeController(IThemeService themeService) : ControllerBase
         }
     }
 
-    // POST: /api/themes/list (Admin Only)
-    [Authorize(Roles = "Admin")]
+    // POST: /api/themes/list
     [HttpPost("list")]
     public async Task<IActionResult> CreateThemesList([FromBody] List<CreateThemeRequestDto> requests)
     {
@@ -98,7 +97,9 @@ public class ThemeController(IThemeService themeService) : ControllerBase
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            await _themeService.CreateThemesListAsync(userId, requests);
+            var isAdmin = User.IsInRole("Admin");
+
+            await _themeService.CreateThemesListAsync(userId, isAdmin, requests);
             
             return Ok(new { message = $"{requests.Count} themes created successfully!!" });
         }
@@ -112,7 +113,7 @@ public class ThemeController(IThemeService themeService) : ControllerBase
         }
     }
 
-    // POST: /api/themes/upload (Admin Only)
+    // POST: /api/themes/upload
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadTheme([FromForm] UploadThemeRequestDto request)
@@ -124,7 +125,9 @@ public class ThemeController(IThemeService themeService) : ControllerBase
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            await _themeService.UploadThemeAsync(userId, request);
+            var isAdmin = User.IsInRole("Admin");
+
+            await _themeService.UploadThemeAsync(userId, isAdmin, request);
             
             return Ok(new { message = "Theme uploaded and created successfully!" });
         }
@@ -151,13 +154,19 @@ public class ThemeController(IThemeService themeService) : ControllerBase
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            await _themeService.UpdateThemeAsync(userId, request);
+            var isAdmin = User.IsInRole("Admin");
+
+            await _themeService.UpdateThemeAsync(userId, isAdmin, request);
             
             return Ok(new { message = "Theme updated successfully!" });
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid();
         }
         catch (Exception ex)
         {
